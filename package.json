@@ -12,7 +12,7 @@
     "start": "bun run --filter @slop-or-not/server start",
     "build": "bun run --filter @slop-or-not/web build && bun run --filter @slop-or-not/server build",
     "typecheck": "bun run --workspaces --if-present typecheck",
-    "test": "bun test apps/server/tests",
+    "test": "bun test apps/server/tests apps/web/tests",
     "check": "bun run typecheck && bun run test && bun run build"
   },
   "devDependencies": {

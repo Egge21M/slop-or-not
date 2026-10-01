@@ -26,7 +26,7 @@ export const questions = sqliteTable(
       .notNull()
       .default("pending"),
     response: text("response", { mode: "json" }).$type<
-      import("@slop-or-not/shared").BinaryResponse
+      import("@slop-or-not/shared").QuestionResponse
     >(),
     finishedAt: integer("finished_at"),
   },

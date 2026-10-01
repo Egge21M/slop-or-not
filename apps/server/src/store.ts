@@ -170,6 +170,36 @@ export function createStore(options: {
       if (changed) publish(inboxId);
       return result;
     },
+    respondCustom(inboxId: string, questionId: string, text: string) {
+      requireInbox(inboxId);
+      let changed = false;
+      const result = db.transaction((tx) => {
+        const row = tx
+          .select()
+          .from(questions)
+          .where(scope(inboxId, questionId))
+          .get();
+        if (!row) throw new DomainError(404, "Question not found");
+        if (row.state !== "pending") return view(row);
+        const committedAt = clock();
+        const updated = tx
+          .update(questions)
+          .set({
+            state: "answered",
+            finishedAt: committedAt,
+            response: { type: "custom", text, committedAt },
+          })
+          .where(
+            and(scope(inboxId, questionId), eq(questions.state, "pending")),
+          )
+          .returning()
+          .get();
+        changed = true;
+        return view(updated);
+      });
+      if (changed) publish(inboxId);
+      return result;
+    },
     subscribe(inboxId: string, listener: (event: InboxEvent) => void) {
       requireInbox(inboxId);
       const set = listeners.get(inboxId) ?? new Set();
