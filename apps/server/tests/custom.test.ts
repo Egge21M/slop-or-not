@@ -84,6 +84,19 @@ test("Custom answer Send preserves conditional text as a distinct final outcome 
   expect(
     await (await request(app, "/api/questions", token, question)).json(),
   ).toEqual(final);
+  const { token: otherToken } = (await (
+    await request(app, "/api/inboxes", undefined, {})
+  ).json()) as { token: string };
+  expect(
+    (
+      await request(
+        app,
+        `/api/questions/${question.questionId}/custom-response`,
+        otherToken,
+        { text: "A different Inbox cannot respond" },
+      )
+    ).status,
+  ).toBe(404);
 });
 
 test("an empty or whitespace-only Custom answer is rejected and the Question stays pending", async () => {
