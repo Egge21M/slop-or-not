@@ -3,8 +3,9 @@ import {
   McpServer,
   ProtocolError,
 } from "@modelcontextprotocol/server";
-import { getResponseSchema, submitQuestionSchema } from "@slop-or-not/shared";
+import { getResponseSchema, submitQuestionSchema, waitForResponseSchema, type QuestionView } from "@slop-or-not/shared";
 import { DomainError, type Store } from "./store";
+import { waitForResponse } from "./wait";
 
 export function createMcp(store: Store) {
   return createMcpHandler(
@@ -16,14 +17,18 @@ export function createMcp(store: Store) {
         { name: "slop-or-not", version: "0.1.0" },
         { capabilities: { tools: {} } },
       );
-      const output = (run: () => ReturnType<Store["get"]>) => {
+      const output = async (run: () => QuestionView | Promise<QuestionView>) => {
         try {
-          const question = run();
+          const question = await run();
+          const outcome = { ...question };
+          // The browser needs its acknowledged Undo choice; agents observe only
+          // committed Responses. Keep pending choices out of MCP results.
+          Reflect.deleteProperty(outcome, "provisional");
           return {
             content: [
-              { type: "text" as const, text: JSON.stringify(question) },
+              { type: "text" as const, text: JSON.stringify(outcome) },
             ],
-            structuredContent: { ...question },
+            structuredContent: outcome,
           };
         } catch (error) {
           if (error instanceof DomainError)
@@ -52,6 +57,17 @@ export function createMcp(store: Store) {
           annotations: { readOnlyHint: true },
         },
         async ({ questionId }) => output(() => store.get(inboxId, questionId)),
+      );
+      server.registerTool(
+        "wait_for_response",
+        {
+          description:
+            "Wait up to waitMs (default 10000, maximum 20000) for the authoritative outcome. The deadline returns pending if unanswered. A disconnect or timeout never answers or cancels the Question; retrieve or wait again with the original ID. Provisional human choices are not delivered Responses.",
+          inputSchema: waitForResponseSchema,
+          annotations: { readOnlyHint: true },
+        },
+        async ({ questionId, waitMs }, ctx) => output(() =>
+          waitForResponse(store, inboxId, questionId, waitMs, ctx.mcpReq.signal)),
       );
       return server;
     },

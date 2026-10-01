@@ -44,8 +44,10 @@ export function createStore(options: {
   }
   const clock = options.clock ?? Date.now;
   const listeners = new Map<string, Set<(event: InboxEvent) => void>>();
+  const closeListeners = new Set<() => void>();
+  let closed = false;
   const hasInbox = (id: string) =>
-    !!db.select().from(inboxes).where(eq(inboxes.id, id)).get();
+    !closed && !!db.select().from(inboxes).where(eq(inboxes.id, id)).get();
   const requireInbox = (id: string) => {
     if (!hasInbox(id)) throw new DomainError(401, "Inbox unavailable");
   };
@@ -180,7 +182,16 @@ export function createStore(options: {
         if (!set.size) listeners.delete(inboxId);
       };
     },
+    onClose(listener: () => void) {
+      if (closed) listener();
+      else closeListeners.add(listener);
+      return () => { closeListeners.delete(listener); };
+    },
     close() {
+      if (closed) return;
+      closed = true;
+      for (const listener of closeListeners) listener();
+      closeListeners.clear();
       listeners.clear();
       sqlite.close();
     },
