@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { inboxes, questions } from "./schema";
 import type {
   QuestionView,
@@ -96,7 +96,11 @@ export function createStore(options: {
           .where(
             and(eq(questions.inboxId, inboxId), eq(questions.state, "pending")),
           )
-          .orderBy(asc(questions.createdAt), asc(questions.questionId))
+          .orderBy(
+            desc(questions.prio),
+            asc(questions.createdAt),
+            asc(questions.questionId),
+          )
           .all()
           .map(view),
       };
@@ -132,6 +136,31 @@ export function createStore(options: {
           .get();
         changed = true;
         return view(inserted);
+      });
+      if (changed) publish(inboxId);
+      return result;
+    },
+    prioritize(inboxId: string, questionId: string) {
+      requireInbox(inboxId);
+      let changed = false;
+      const result = db.transaction((tx) => {
+        const row = tx
+          .select()
+          .from(questions)
+          .where(scope(inboxId, questionId))
+          .get();
+        if (!row) throw new DomainError(404, "Question not found");
+        if (row.state !== "pending" || row.prio) return view(row);
+        const updated = tx
+          .update(questions)
+          .set({ prio: true })
+          .where(
+            and(scope(inboxId, questionId), eq(questions.state, "pending")),
+          )
+          .returning()
+          .get();
+        changed = true;
+        return view(updated);
       });
       if (changed) publish(inboxId);
       return result;

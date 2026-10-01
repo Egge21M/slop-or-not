@@ -75,12 +75,14 @@ export function createApplication(options: {
               submitQuestionSchema.parse(await request.json()),
             ),
           );
-        const match = path.match(/^\/api\/questions\/([^/]+)(\/response)?$/);
+        const match = path.match(/^\/api\/questions\/([^/]+)(\/response|\/priority)?$/);
         if (match) {
           const id = questionIdSchema.parse(match[1]);
           if (request.method === "GET" && !match[2])
             return Response.json(store.get(inboxId, id));
-          if (request.method === "POST" && match[2])
+          if (request.method === "POST" && match[2] === "/priority")
+            return Response.json(store.prioritize(inboxId, id));
+          if (request.method === "POST" && match[2] === "/response")
             return Response.json(
               store.respond(
                 inboxId,
