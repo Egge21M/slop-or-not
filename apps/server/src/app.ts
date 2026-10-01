@@ -78,8 +78,9 @@ export function createApplication(options: {
             ),
           );
         const match = path.match(
-          /^\/api\/questions\/([^/]+)(\/response|\/custom-response|\/undo)?$/,
+          /^\/api\/questions\/([^/]+)(\/response|\/custom-response|\/undo|\/priority)?$/,
         );
+
         if (match) {
           const id = questionIdSchema.parse(match[1]);
           if (request.method === "GET" && !match[2])
@@ -92,6 +93,9 @@ export function createApplication(options: {
                 customResponseSchema.parse(await request.json()).text,
               ),
             );
+          if (request.method === "POST" && match[2] === "/priority")
+            return Response.json(store.prioritize(inboxId, id));
+
           if (request.method === "POST" && match[2] === "/undo") {
             const input = undoBinarySchema.parse(await request.json());
             return Response.json(store.undo(inboxId, id, input.choiceId));
