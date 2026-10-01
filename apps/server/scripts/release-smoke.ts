@@ -2,6 +2,7 @@
 // Driver/browser are operator-selected and are not production dependencies.
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { dirname } from "node:path";
+import { listeningPort } from "./process-readiness";
 const modulePath = process.env.SLOP_PLAYWRIGHT_MODULE;
 const chromePath = process.env.SLOP_CHROME_PATH;
 if (!modulePath || !chromePath) throw new Error("Set SLOP_PLAYWRIGHT_MODULE and SLOP_CHROME_PATH");
@@ -73,11 +74,7 @@ async function start() {
     env: { ...process.env, NODE_ENV: "production", PUBLIC_ORIGIN: `https://${proxy.url.host}`, HOST: "127.0.0.1", PORT: "0", DATABASE_PATH: `${directory}/inbox.sqlite`, JWT_SECRET: jwtSecret },
     stdout: "pipe", stderr: "pipe",
   });
-  const reader = child.stdout.getReader();
-  const output = await reader.read();
-  reader.releaseLock();
-  const port = new TextDecoder().decode(output.value).match(/port (\d+)/)?.[1];
-  if (!port) throw new Error(`Bundle startup failed: ${await new Response(child.stderr).text()}`);
+  const port = await listeningPort(child);
   backend = `http://127.0.0.1:${port}`;
 }
 async function stop() { child?.kill("SIGTERM"); await child?.exited; child = undefined; }

@@ -30,6 +30,8 @@ The final required `bun run check` passed: strict typechecks in all three worksp
 
 After that final rebuild, the existing isolated artifact probe passed again: static frontend, startup migrations, authenticated Custom commitment, actual process restart, and same-JWT retrieval, with no node_modules present.
 
+The merged integration check exposed a startup-test readiness race: one stdout chunk need not contain the listening line. A harmless preload diagnostic reproduced the same undefined-port failure deterministically. The test and optional release helper now accumulate complete lines across chunks, detect process exit, and apply a five-second deadline with captured stderr. Focused real-process diagnostics verified a split port was not truncated, exit status/stderr were retained, and a silent process timed out. Application behavior was unchanged; the required full check passed again after the repair.
+
 ## Repeat locally
 
 Use separately installed Playwright Core, current stable Chrome, and an authenticated Codex CLI. These are optional smoke tools, not production dependencies. From the repository root:
