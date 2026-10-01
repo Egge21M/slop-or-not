@@ -85,10 +85,17 @@ export function createStore(options: {
   function scheduleDeadline() {
     clearTimeout(deadlineTimer);
     if (closed) return;
-    const deadlines = db.select().from(questions).where(isNotNull(questions.provisional)).all()
+    const deadlines = db
+      .select()
+      .from(questions)
+      .where(isNotNull(questions.provisional))
+      .all()
       .map((row) => row.provisional!.deadline);
     if (!deadlines.length) return;
-    deadlineTimer = setTimeout(reconcileDeadlines, Math.max(1, Math.min(...deadlines) - clock()));
+    deadlineTimer = setTimeout(
+      reconcileDeadlines,
+      Math.max(1, Math.min(...deadlines) - clock()),
+    );
     deadlineTimer.unref();
   }
   function reconcileDeadlines() {
@@ -96,12 +103,26 @@ export function createStore(options: {
     const now = clock();
     const changedInboxes = new Set<string>();
     db.transaction((tx) => {
-      for (const row of tx.select().from(questions).where(isNotNull(questions.provisional)).all()) {
+      for (const row of tx
+        .select()
+        .from(questions)
+        .where(isNotNull(questions.provisional))
+        .all()) {
         const provisional = row.provisional!;
         if (row.state !== "pending" || provisional.deadline > now) continue;
-        tx.update(questions).set({ state: "answered", provisional: null, finishedAt: now,
-          response: { type: "binary", value: provisional.value, committedAt: now } })
-          .where(scope(row.inboxId, row.questionId)).run();
+        tx.update(questions)
+          .set({
+            state: "answered",
+            provisional: null,
+            finishedAt: now,
+            response: {
+              type: "binary",
+              value: provisional.value,
+              committedAt: now,
+            },
+          })
+          .where(scope(row.inboxId, row.questionId))
+          .run();
         changedInboxes.add(row.inboxId);
       }
     });
@@ -187,18 +208,33 @@ export function createStore(options: {
           .where(scope(inboxId, questionId))
           .get();
         if (!row) throw new DomainError(404, "Question not found");
-        const receipt = tx.select().from(binaryChoices).where(and(
-          eq(binaryChoices.inboxId, inboxId), eq(binaryChoices.questionId, questionId), eq(binaryChoices.choiceId, choiceId)
-        )).get();
+        const receipt = tx
+          .select()
+          .from(binaryChoices)
+          .where(
+            and(
+              eq(binaryChoices.inboxId, inboxId),
+              eq(binaryChoices.questionId, questionId),
+              eq(binaryChoices.choiceId, choiceId),
+            ),
+          )
+          .get();
         if (receipt) return view(row);
-        tx.insert(binaryChoices).values({ inboxId, questionId, choiceId }).run();
+        tx.insert(binaryChoices)
+          .values({ inboxId, questionId, choiceId })
+          .run();
         if (row.state !== "pending") return view(row);
         if (row.provisional) return view(row);
         const acknowledgedAt = clock();
         const updated = tx
           .update(questions)
           .set({
-            provisional: { choiceId, value, acknowledgedAt, deadline: acknowledgedAt + 3000 },
+            provisional: {
+              choiceId,
+              value,
+              acknowledgedAt,
+              deadline: acknowledgedAt + 3000,
+            },
           })
           .where(
             and(scope(inboxId, questionId), eq(questions.state, "pending")),
@@ -217,10 +253,20 @@ export function createStore(options: {
       reconcileDeadlines();
       let changed = false;
       const result = db.transaction((tx) => {
-        const row = tx.select().from(questions).where(scope(inboxId, questionId)).get();
+        const row = tx
+          .select()
+          .from(questions)
+          .where(scope(inboxId, questionId))
+          .get();
         if (!row) throw new DomainError(404, "Question not found");
-        if (row.state !== "pending" || row.provisional?.choiceId !== choiceId) return view(row);
-        const updated = tx.update(questions).set({ provisional: null }).where(scope(inboxId, questionId)).returning().get();
+        if (row.state !== "pending" || row.provisional?.choiceId !== choiceId)
+          return view(row);
+        const updated = tx
+          .update(questions)
+          .set({ provisional: null })
+          .where(scope(inboxId, questionId))
+          .returning()
+          .get();
         changed = true;
         return view(updated);
       });
@@ -230,6 +276,7 @@ export function createStore(options: {
     },
     respondCustom(inboxId: string, questionId: string, text: string) {
       requireInbox(inboxId);
+      reconcileDeadlines();
       let changed = false;
       const result = db.transaction((tx) => {
         const row = tx
@@ -246,6 +293,7 @@ export function createStore(options: {
             state: "answered",
             finishedAt: committedAt,
             response: { type: "custom", text, committedAt },
+            provisional: null,
           })
           .where(
             and(scope(inboxId, questionId), eq(questions.state, "pending")),
@@ -255,6 +303,7 @@ export function createStore(options: {
         changed = true;
         return view(updated);
       });
+      scheduleDeadline();
       if (changed) publish(inboxId);
       return result;
     },

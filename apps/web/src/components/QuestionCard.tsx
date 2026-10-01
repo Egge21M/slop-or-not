@@ -3,6 +3,8 @@ import type { QuestionView } from "@slop-or-not/shared"
 import { Button } from "./ui/button"
 import { sendBinary, undoBinary, ApiError } from "../lib/api"
 import { useQuestionSwipe } from "../lib/useQuestionSwipe"
+import { SupportingMarkdown } from "./SupportingMarkdown"
+import { CustomComposer } from "./CustomComposer"
 export function QuestionCard({
   question,
   token,
@@ -15,6 +17,7 @@ export function QuestionCard({
   onUnavailable: () => void
 }) {
   const [busy, setBusy] = useState(false)
+  const [composing, setComposing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [authoritative, setAuthoritative] = useState(question)
   const [now, setNow] = useState(Date.now)
@@ -26,6 +29,7 @@ export function QuestionCard({
       unsent.current = null
       setError(null)
     }
+    if (question.state !== "pending") setComposing(false)
   }, [question])
   useEffect(() => {
     if (!authoritative.provisional) return
@@ -41,20 +45,29 @@ export function QuestionCard({
     return () => clearInterval(timer)
   }, [authoritative.provisional, onChanged])
   const remaining = authoritative.provisional
-    ? Math.max(0, authoritative.provisional.deadline - now) : 0
+    ? Math.max(0, authoritative.provisional.deadline - now)
+    : 0
   async function answer(value: "yes" | "no") {
-    if (busy || authoritative.provisional || authoritative.state !== "pending") return
+    if (busy || authoritative.provisional || authoritative.state !== "pending")
+      return
     // Keep a failed request's ID so retry cannot resurrect an undone choice.
     const command = unsent.current ?? { value, choiceId: crypto.randomUUID() }
     unsent.current = command
     setBusy(true)
     setError(null)
     try {
-      const result = await sendBinary(token, question.questionId, command.value, command.choiceId)
+      const result = await sendBinary(
+        token,
+        question.questionId,
+        command.value,
+        command.choiceId
+      )
       setAuthoritative(result)
       unsent.current = null
       await onChanged().catch(() => {
-        setError("Server outcome acknowledged. Reconnecting to refresh the Inbox.")
+        setError(
+          "Server outcome acknowledged. Reconnecting to refresh the Inbox."
+        )
       })
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) {
@@ -78,67 +91,161 @@ export function QuestionCard({
     setBusy(true)
     setError(null)
     try {
-      const result = await undoBinary(token, question.questionId, authoritative.provisional.choiceId)
+      const result = await undoBinary(
+        token,
+        question.questionId,
+        authoritative.provisional.choiceId
+      )
       setAuthoritative(result)
       await onChanged().catch(() => {
-        setError("Server outcome acknowledged. Reconnecting to refresh the Inbox.")
+        setError(
+          "Server outcome acknowledged. Reconnecting to refresh the Inbox."
+        )
       })
     } catch (cause) {
-      if (cause instanceof ApiError && cause.status === 401) { onUnavailable(); return }
-      setError("Undo unacknowledged. The stored deadline continues; reconnect to check the outcome.")
-      try { await onChanged() } catch {}
-    } finally { setBusy(false) }
+      if (cause instanceof ApiError && cause.status === 401) {
+        onUnavailable()
+        return
+      }
+      setError(
+        "Undo unacknowledged. The stored deadline continues; reconnect to check the outcome."
+      )
+      try {
+        await onChanged()
+      } catch {}
+    } finally {
+      setBusy(false)
+    }
   }
   const gestures = useQuestionSwipe({
-    disabled: busy || !!authoritative.provisional || authoritative.state !== "pending" || !!unsent.current,
+    disabled:
+      busy ||
+      composing ||
+      !!authoritative.provisional ||
+      authoritative.state !== "pending" ||
+      !!unsent.current,
     onBinary: (value) => void answer(value),
+    onCustom: () => setComposing(true),
   })
   return (
     <article
-      {...gestures}
-      style={{ touchAction: "pan-y" }}
       className="question-card panel space-y-6"
       aria-label="Question card"
     >
-      <div className="identity">
-        <span>{question.project}</span>
-        <span>Agent session · {question.agentSession}</span>
+      <div
+        {...gestures}
+        style={{ touchAction: "none" }}
+        data-question-gesture
+        className="space-y-4"
+      >
+        <div className="identity">
+          <span>{question.project}</span>
+          <span>Agent session · {question.agentSession}</span>
+        </div>
+        <h2 className="question-wording">{question.wording}</h2>
+        <p className="small-note">
+          Swipe right for Yes, left for No, or up for a Custom answer.
+        </p>
       </div>
-      <h2 className="question-wording">{question.wording}</h2>
+      {question.supportingMarkdown !== undefined && (
+        <SupportingMarkdown markdown={question.supportingMarkdown} />
+      )}
       <div className="grid grid-cols-2 gap-3">
         <Button
           variant="outline"
           className="large-button"
-          disabled={busy || !!authoritative.provisional || authoritative.state !== "pending" || !!unsent.current}
+          disabled={
+            busy ||
+            composing ||
+            !!authoritative.provisional ||
+            authoritative.state !== "pending" ||
+            !!unsent.current
+          }
           onClick={() => void answer("no")}
         >
           No
         </Button>
         <Button
           className="large-button"
-          disabled={busy || !!authoritative.provisional || authoritative.state !== "pending" || !!unsent.current}
+          disabled={
+            busy ||
+            composing ||
+            !!authoritative.provisional ||
+            authoritative.state !== "pending" ||
+            !!unsent.current
+          }
           onClick={() => void answer("yes")}
         >
           Yes
         </Button>
       </div>
-      {busy && <p role="status">{authoritative.provisional
-        ? "Sending Undo… The stored deadline continues."
-        : "Sending choice… Unsent until acknowledged."}</p>}
+      {composing && authoritative.state === "pending" ? (
+        <CustomComposer
+          questionId={question.questionId}
+          token={token}
+          onClose={() => setComposing(false)}
+          onChanged={onChanged}
+          onUnavailable={onUnavailable}
+          onOutcome={setAuthoritative}
+        />
+      ) : (
+        <Button
+          variant="outline"
+          className="large-button w-full"
+          disabled={busy || authoritative.state !== "pending"}
+          onClick={() => setComposing(true)}
+        >
+          Custom answer
+        </Button>
+      )}
+      {busy && (
+        <p role="status">
+          {authoritative.provisional
+            ? "Sending Undo… The stored deadline continues."
+            : "Sending choice… Unsent until acknowledged."}
+        </p>
+      )}
       {authoritative.provisional && (
         <div className="space-y-3" aria-live="polite">
           <p role="status">
-            {authoritative.provisional.value === "yes" ? "Yes" : "No"} acknowledged. {remaining > 0
+            {authoritative.provisional.value === "yes" ? "Yes" : "No"}{" "}
+            acknowledged.{" "}
+            {remaining > 0
               ? `Provisional · Undo within ${(remaining / 1000).toFixed(1)} seconds.`
               : "Waiting for the server to confirm the final outcome…"}
           </p>
-          <Button variant="outline" disabled={busy || remaining === 0} onClick={() => void undo()}>Undo</Button>
+          <Button
+            variant="outline"
+            disabled={busy || remaining === 0}
+            onClick={() => void undo()}
+          >
+            Undo
+          </Button>
         </div>
       )}
-      {authoritative.state === "answered" && <p role="status">
-        {authoritative.response?.value === "yes" ? "Yes" : "No"} committed. Further answers cannot change it.
-      </p>}
-      {unsent.current && !busy && <Button onClick={() => void answer(unsent.current!.value)}>Retry unsent choice</Button>}
+      {authoritative.state === "answered" && (
+        <p role="status">
+          {authoritative.response?.type === "custom"
+            ? "Custom answer"
+            : authoritative.response?.value === "yes"
+              ? "Yes"
+              : "No"}{" "}
+          committed. Further answers cannot change it.
+        </p>
+      )}
+      {authoritative.response?.type === "custom" && (
+        <p
+          className="break-words whitespace-pre-wrap"
+          aria-label="Committed Custom answer"
+        >
+          {authoritative.response.text}
+        </p>
+      )}
+      {unsent.current && !busy && (
+        <Button onClick={() => void answer(unsent.current!.value)}>
+          Retry unsent choice
+        </Button>
+      )}
       {error && <p role="alert">{error}</p>}
     </article>
   )

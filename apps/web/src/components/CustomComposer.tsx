@@ -1,5 +1,5 @@
 import { useRef, useState } from "react"
-import { customResponseSchema } from "@slop-or-not/shared"
+import { customResponseSchema, type QuestionView } from "@slop-or-not/shared"
 import { ApiError, sendCustom } from "../lib/api"
 import { Button } from "./ui/button"
 
@@ -9,12 +9,14 @@ export function CustomComposer({
   onClose,
   onChanged,
   onUnavailable,
+  onOutcome,
 }: {
   questionId: string
   token: string
   onClose: () => void
   onChanged: () => Promise<void>
   onUnavailable: () => void
+  onOutcome: (outcome: QuestionView) => void
 }) {
   const [text, setText] = useState("")
   const [busy, setBusy] = useState(false)
@@ -28,6 +30,7 @@ export function CustomComposer({
     setError(null)
     try {
       const outcome = await sendCustom(token, questionId, text)
+      onOutcome(outcome)
       if (
         outcome.response?.type === "custom" &&
         outcome.response.text === text
@@ -38,7 +41,11 @@ export function CustomComposer({
           "This text was not sent: the Question already has a final outcome."
         )
       }
-      await onChanged()
+      await onChanged().catch(() => {
+        setError(
+          "Server outcome acknowledged. Reconnecting to refresh the Inbox."
+        )
+      })
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) {
         onUnavailable()

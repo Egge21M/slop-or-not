@@ -60,6 +60,5 @@ export type QuestionView = SubmitQuestion & {
   state: "pending" | "answered";
   response: QuestionResponse | null;
   provisional: ProvisionalBinary | null;
-
 };
 export type InboxSnapshot = { inboxId: string; questions: QuestionView[] };
