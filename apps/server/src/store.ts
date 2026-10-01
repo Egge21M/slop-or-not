@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { and, asc, eq } from "drizzle-orm";
-import { inboxes, questions } from "./schema";
+import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { binaryChoices, inboxes, questions } from "./schema";
 import type {
   QuestionView,
   SubmitQuestion,
@@ -65,9 +65,11 @@ export function createStore(options: {
     prio: row.prio,
     state: row.state,
     response: row.response,
+    provisional: row.provisional,
   });
   const get = (inboxId: string, questionId: string) => {
     requireInbox(inboxId);
+    reconcileDeadlines();
     const row = db
       .select()
       .from(questions)
@@ -80,7 +82,37 @@ export function createStore(options: {
     for (const listener of listeners.get(inboxId) ?? [])
       listener({ type: "changed", inboxId });
   };
+  let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
+  function scheduleDeadline() {
+    clearTimeout(deadlineTimer);
+    if (closed) return;
+    const deadlines = db.select().from(questions).where(isNotNull(questions.provisional)).all()
+      .map((row) => row.provisional!.deadline);
+    if (!deadlines.length) return;
+    deadlineTimer = setTimeout(reconcileDeadlines, Math.max(1, Math.min(...deadlines) - clock()));
+    deadlineTimer.unref();
+  }
+  function reconcileDeadlines() {
+    if (closed) return;
+    const now = clock();
+    const changedInboxes = new Set<string>();
+    db.transaction((tx) => {
+      for (const row of tx.select().from(questions).where(isNotNull(questions.provisional)).all()) {
+        const provisional = row.provisional!;
+        if (row.state !== "pending" || provisional.deadline > now) continue;
+        tx.update(questions).set({ state: "answered", provisional: null, finishedAt: now,
+          response: { type: "binary", value: provisional.value, committedAt: now } })
+          .where(scope(row.inboxId, row.questionId)).run();
+        changedInboxes.add(row.inboxId);
+      }
+    });
+    scheduleDeadline();
+    for (const inboxId of changedInboxes) publish(inboxId);
+  }
+  // Startup reconciles the persisted deadline before accepting any request.
+  reconcileDeadlines();
   return {
+    reconcileDeadlines,
     createInbox() {
       const id = crypto.randomUUID();
       db.insert(inboxes).values({ id, createdAt: clock() }).run();
@@ -90,6 +122,7 @@ export function createStore(options: {
     get,
     snapshot(inboxId: string): InboxSnapshot {
       requireInbox(inboxId);
+      reconcileDeadlines();
       return {
         inboxId,
         questions: db
@@ -105,6 +138,7 @@ export function createStore(options: {
     },
     submit(inboxId: string, input: SubmitQuestion) {
       requireInbox(inboxId);
+      reconcileDeadlines();
       const fingerprint = new Bun.CryptoHasher("sha256")
         .update(
           JSON.stringify([
@@ -142,8 +176,10 @@ export function createStore(options: {
       inboxId: string,
       questionId: string,
       value: BinaryResponse["value"],
+      choiceId: string = crypto.randomUUID(),
     ) {
       requireInbox(inboxId);
+      reconcileDeadlines();
       let changed = false;
       const result = db.transaction((tx) => {
         const row = tx
@@ -152,14 +188,18 @@ export function createStore(options: {
           .where(scope(inboxId, questionId))
           .get();
         if (!row) throw new DomainError(404, "Question not found");
+        const receipt = tx.select().from(binaryChoices).where(and(
+          eq(binaryChoices.inboxId, inboxId), eq(binaryChoices.questionId, questionId), eq(binaryChoices.choiceId, choiceId)
+        )).get();
+        if (receipt) return view(row);
+        tx.insert(binaryChoices).values({ inboxId, questionId, choiceId }).run();
         if (row.state !== "pending") return view(row);
-        const committedAt = clock();
+        if (row.provisional) return view(row);
+        const acknowledgedAt = clock();
         const updated = tx
           .update(questions)
           .set({
-            state: "answered",
-            finishedAt: committedAt,
-            response: { type: "binary", value, committedAt },
+            provisional: { choiceId, value, acknowledgedAt, deadline: acknowledgedAt + 3000 },
           })
           .where(
             and(scope(inboxId, questionId), eq(questions.state, "pending")),
@@ -169,6 +209,23 @@ export function createStore(options: {
         changed = true;
         return view(updated);
       });
+      if (changed) publish(inboxId);
+      scheduleDeadline();
+      return result;
+    },
+    undo(inboxId: string, questionId: string, choiceId: string) {
+      requireInbox(inboxId);
+      reconcileDeadlines();
+      let changed = false;
+      const result = db.transaction((tx) => {
+        const row = tx.select().from(questions).where(scope(inboxId, questionId)).get();
+        if (!row) throw new DomainError(404, "Question not found");
+        if (row.state !== "pending" || row.provisional?.choiceId !== choiceId) return view(row);
+        const updated = tx.update(questions).set({ provisional: null }).where(scope(inboxId, questionId)).returning().get();
+        changed = true;
+        return view(updated);
+      });
+      scheduleDeadline();
       if (changed) publish(inboxId);
       return result;
     },
@@ -192,6 +249,7 @@ export function createStore(options: {
       closed = true;
       for (const listener of closeListeners) listener();
       closeListeners.clear();
+      clearTimeout(deadlineTimer);
       listeners.clear();
       sqlite.close();
     },

@@ -25,7 +25,7 @@ async function call(app: ReturnType<typeof createApplication>, token: string, na
 async function answer(app: ReturnType<typeof createApplication>, token: string) {
   return app.fetch(new Request(`http://localhost/api/questions/${question.questionId}/response`, {
     method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ value: 'yes' }),
+    body: JSON.stringify({ value: 'yes', choiceId: crypto.randomUUID() }),
   }));
 }
 
@@ -33,9 +33,19 @@ test('bounded MCP wait consumes a later committed phone Response across independ
   const { app, token } = await fixture();
   try {
     expect((await call(app, token, 'submit_question', question)).structuredContent).toMatchObject({ state: 'pending', response: null });
-    const waiting = call(app, token, 'wait_for_response', { questionId: question.questionId, waitMs: 1000 });
+    const waiting = call(app, token, 'wait_for_response', { questionId: question.questionId, waitMs: 10000 });
     await Bun.sleep(50);
     expect((await answer(app, token)).status).toBe(200);
+    for (const [name, args] of [
+      ['submit_question', question],
+      ['get_response', { questionId: question.questionId }],
+      ['wait_for_response', { questionId: question.questionId, waitMs: 0 }],
+    ] as const) {
+      const result = await call(app, token, name, args);
+      expect(result.structuredContent).toMatchObject({ state: 'pending', response: null });
+      expect(result.structuredContent).not.toHaveProperty('provisional');
+      expect(JSON.stringify(result.content)).not.toContain('choiceId');
+    }
     expect((await waiting).structuredContent).toMatchObject({ state: 'answered', response: { type: 'binary', value: 'yes' } });
     expect((await call(app, token, 'get_response', { questionId: question.questionId })).structuredContent).toMatchObject({ state: 'answered', response: { value: 'yes' } });
   } finally { await app.close(); }
@@ -52,6 +62,7 @@ test('wait deadline and client timeout preserve pending Questions for reissued o
     const inbox = await (await app.fetch(new Request('http://localhost/api/inbox', { headers: { authorization: `Bearer ${token}` } }))).json() as { questions: unknown[] };
     expect(inbox.questions).toHaveLength(1);
     await answer(app, token);
+    await Bun.sleep(3100);
     expect((await call(app, token, 'wait_for_response', { questionId: question.questionId, waitMs: 0 })).structuredContent).toMatchObject({ state: 'answered', response: { value: 'yes' } });
   } finally { await app.close(); }
 });
@@ -69,6 +80,7 @@ test('pending submission and committed Response survive server restarts with the
     app = createApplication({ databasePath, jwtSecret });
     expect((await call(app, token, 'get_response', { questionId: question.questionId })).structuredContent).toMatchObject({ ...question, state: 'pending', response: null });
     await answer(app, token);
+    await Bun.sleep(3100);
     await app.close();
     app = createApplication({ databasePath, jwtSecret });
     const expected = { state: 'answered', response: { type: 'binary', value: 'yes' } };

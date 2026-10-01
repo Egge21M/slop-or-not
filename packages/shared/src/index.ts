@@ -31,17 +31,24 @@ export const waitForResponseSchema = z
   })
   .strict();
 export const binaryResponseSchema = z
-  .object({ value: z.enum(["yes", "no"]) })
+  .object({ value: z.enum(["yes", "no"]), choiceId: z.uuid() })
   .strict();
+export const undoBinarySchema = z.object({ choiceId: z.uuid() }).strict();
 export type SubmitQuestion = z.infer<typeof submitQuestionSchema>;
-export type BinaryResponse = z.infer<typeof binaryResponseSchema> & {
+export type BinaryResponse = {
   type: "binary";
+  value: "yes" | "no";
   committedAt: number;
+};
+export type ProvisionalBinary = z.infer<typeof binaryResponseSchema> & {
+  acknowledgedAt: number;
+  deadline: number;
 };
 export type QuestionView = SubmitQuestion & {
   createdAt: number;
   prio: boolean;
   state: "pending" | "answered";
   response: BinaryResponse | null;
+  provisional: ProvisionalBinary | null;
 };
 export type InboxSnapshot = { inboxId: string; questions: QuestionView[] };
