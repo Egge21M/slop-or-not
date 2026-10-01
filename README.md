@@ -1,6 +1,6 @@
 # Slop or Not
 
-Coding agents ask immutable yes/no Questions through MCP. A regular mobile web app lets the human pair an Inbox, receive foreground updates, and answer using Yes or No controls. The first implementation slice supports immediate binary Responses; swipes, Undo, Custom answers, waits, priority, history, and deletion are implemented in their dedicated tickets.
+Coding agents ask immutable yes/no Questions through MCP. A phone browser pairs an Inbox, receives foreground updates, and answers with right/left/up swipes or Yes/No/Custom controls. Binary choices have a persisted three-second Undo window; Custom answers commit on Send. Priority queues, manual pending selection, bounded agent waits, retained history, and Inbox deletion are included.
 
 The agreed scope lives in [issue #1](https://github.com/Egge21M/slop-or-not/issues/1), [technical scope](docs/technical-scope.md), [GLOSSARY.md](GLOSSARY.md), and [ADRs](docs/adr/). Read the [Codex compatibility evidence](docs/research/codex-compatibility-probe.md) before assuming native Tasks or automatic agent resumption.
 
@@ -36,12 +36,13 @@ Visit the Vite URL, normally `http://localhost:5173`. Its `/api`, `/mcp`, and `/
 
 ```sh
 bun run build
-bun run start
-# Or run the server bundle from the repository root:
-bun apps/server/dist/index.js
+# Supply the stable JWT_SECRET in the environment, and use persistent storage:
+NODE_ENV=production PUBLIC_ORIGIN=https://YOUR_PRIVATE_HOST \
+  DATABASE_PATH=/data/slop.sqlite PORT=8080 \
+  bun apps/server/dist/index.js
 ```
 
-Bun serves the Vite output, API, phone SSE, and `/mcp` from one origin. Preserve `apps/server/migrations` beside the source/dist directories: checked-in SQL migrations apply synchronously before traffic, and migration failure stops startup. Use `DATABASE_PATH` on the persistent volume and keep `JWT_SECRET` stable across restarts. Set `PUBLIC_ORIGIN` to the public HTTPS origin to check the expected host and browser Origin; backend HTTP behind TLS termination is supported. `/health` is a public GET endpoint for internal probes. `HOST` defaults to `0.0.0.0` and `PORT` to 3000.
+Bun serves the Vite output, API, phone SSE, and `/mcp` from one origin. Preserve `apps/server/migrations` beside the source/dist directories: checked-in SQL migrations apply synchronously before traffic, and migration failure stops startup. Production startup requires an absolute `DATABASE_PATH` and a valid HTTPS `PUBLIC_ORIGIN`; use mounted persistent storage and keep `JWT_SECRET` stable across restarts. Backend HTTP behind TLS termination is supported. `/health` is a public GET endpoint for internal probes. `HOST` defaults to `0.0.0.0` and `PORT` to 3000 (8080 in the container/Fly config).
 
 The Bun entrypoint disables idle timeouts for phone SSE and MCP requests. Phone SSE emits 15-second heartbeats, uses bearer-authenticated fetch, and refreshes authoritative Inbox state on reconnect. No event replay or background notification is promised. Keep the SQLite database, WAL, and SHM files out of source control.
 
@@ -64,6 +65,8 @@ tool_timeout_sec = 30
 
 `submit_question` takes `questionId` (an agent-chosen UUIDv7), `wording`, `project`, `agentSession`, and optional `supportingMarkdown`. Phrase wording as a yes/no Question. It returns immediately; retain the chosen ID and use `get_response` after independent work or reconnecting. An identical retry returns the current outcome; any changed original content conflicts. A submitted Question is never tied to an MCP request's lifetime.
 
-The MCP handler explicitly enables the stateless legacy path for tested Codex 0.159.2 (2025-06-18) while also serving the modern 2026-07-28 revision. Native Tasks and idle automatic resumption were not demonstrated. The next agent-delivery ticket adds bounded waits.
+The MCP handler explicitly enables the stateless legacy path for tested Codex 0.159.2 (2025-06-18) while also serving the modern 2026-07-28 revision. `wait_for_response` waits up to 20 seconds; timeout/disconnection leaves the Question pending. Native Tasks and idle automatic resumption were not demonstrated. See [agent instructions](docs/agents/codex.md) for wait/continue, cancellation, retries, and reconnect behavior.
 
-The pilot is intended for an unlisted testing URL; anyone who discovers it can create an Inbox. Paid deployment, hosted proxy smoke checks, and release packaging are separate work.
+The pilot is intended for an unlisted testing URL; anyone who discovers it can create an Inbox. Credential holders are trusted to submit, read, answer, and delete. Finished content expires after seven days; Inbox deletion revokes every paired device and agent. There is no credential recovery, backup, or background notification.
+
+The [tester guide](docs/pilot-tester.md) covers pairing, saving/pasting access, all Response controls, navigation, and deletion. The [operator guide](docs/pilot-operator.md) describes the Docker package, one always-running Fly Machine, one persistent volume, stable secrets, disabled snapshots, and restart. [Release evidence](docs/research/release-smoke.md) records local Chrome/Codex checks and outstanding Docker/hosted HTTPS gates. Actual paid provisioning/deployment is separate from producing this package.

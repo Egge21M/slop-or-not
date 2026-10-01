@@ -1,0 +1,120 @@
+{
+  "mode": "wait",
+  "versions": {
+    "bun": "1.3.14",
+    "codex": "codex-cli 0.159.2",
+    "chrome": "154.0.8037.92",
+    "sdk": "2.2.0"
+  },
+  "checks": {
+    "paired": true,
+    "submitted": true,
+    "consumed": true
+  },
+  "trace": [
+    {
+      "method": "initialize",
+      "revision": null,
+      "offered": "2025-06-18"
+    },
+    {
+      "method": "notifications/initialized",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/list",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/call",
+      "tool": "submit_question",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/call",
+      "tool": "wait_for_response",
+      "revision": "2025-06-18"
+    }
+  ],
+  "first": {
+    "exitCode": 0,
+    "items": [
+      {
+        "id": "item_0",
+        "type": "agent_message",
+        "text": "I’ll check whether the requested tools are available, then report the result.\n"
+      },
+      {
+        "id": "item_1",
+        "type": "mcp_tool_call",
+        "server": "slop_not",
+        "tool": "submit_question",
+        "arguments": {
+          "questionId": "01a0f6a8-41a1-7000-ab58-ba627977af75",
+          "wording": "Should we proceed after wait?",
+          "project": "production-smoke",
+          "agentSession": "wait"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"questionId\":\"01a0f6a8-41a1-7000-ab58-ba627977af75\",\"wording\":\"Should we proceed after wait?\",\"project\":\"production-smoke\",\"agentSession\":\"wait\",\"createdAt\":1790844634554,\"prio\":false,\"state\":\"pending\",\"response\":null}"
+            }
+          ],
+          "structured_content": {
+            "questionId": "01a0f6a8-41a1-7000-ab58-ba627977af75",
+            "wording": "Should we proceed after wait?",
+            "project": "production-smoke",
+            "agentSession": "wait",
+            "createdAt": 1790844634554,
+            "prio": false,
+            "state": "pending",
+            "response": null
+          }
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_2",
+        "type": "mcp_tool_call",
+        "server": "slop_not",
+        "tool": "wait_for_response",
+        "arguments": {
+          "questionId": "01a0f6a8-41a1-7000-ab58-ba627977af75",
+          "waitMs": 10000
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"questionId\":\"01a0f6a8-41a1-7000-ab58-ba627977af75\",\"wording\":\"Should we proceed after wait?\",\"project\":\"production-smoke\",\"agentSession\":\"wait\",\"createdAt\":1790844634554,\"prio\":false,\"state\":\"answered\",\"response\":{\"type\":\"binary\",\"value\":\"yes\",\"committedAt\":1790844638913}}"
+            }
+          ],
+          "structured_content": {
+            "questionId": "01a0f6a8-41a1-7000-ab58-ba627977af75",
+            "wording": "Should we proceed after wait?",
+            "project": "production-smoke",
+            "agentSession": "wait",
+            "createdAt": 1790844634554,
+            "prio": false,
+            "state": "answered",
+            "response": {
+              "type": "binary",
+              "value": "yes",
+              "committedAt": 1790844638913
+            }
+          }
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_3",
+        "type": "agent_message",
+        "text": "State: `answered`\n\nResponse:\n```json\n{\"type\":\"binary\",\"value\":\"yes\",\"committedAt\":1790844638913}\n```"
+      }
+    ]
+  }
+}
