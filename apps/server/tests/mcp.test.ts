@@ -6,9 +6,11 @@ import { expect, test } from "bun:test";
 import { createApplication } from "../src/app";
 
 test("independent authenticated MCP requests submit and retrieve the phone's Response", async () => {
+  let now = 10_000;
   const app = createApplication({
     databasePath: ":memory:",
     jwtSecret: "test-signing-secret-at-least-thirty-two-bytes",
+    clock: () => now,
   });
   const paired = await app.fetch(
     new Request("http://localhost/api/inboxes", { method: "POST" }),
@@ -52,10 +54,13 @@ test("independent authenticated MCP requests submit and retrieve the phone's Res
             authorization: `Bearer ${token}`,
             "content-type": "application/json",
           },
-          body: JSON.stringify({ value: "yes" }),
+          body: JSON.stringify({ value: "yes", choiceId: crypto.randomUUID() }),
         },
       ),
     );
+    expect((await call("get_response", { questionId: question.questionId })).structuredContent)
+      .toMatchObject({ state: "pending", response: null });
+    now = 13_000;
     expect(
       (await call("get_response", { questionId: question.questionId }))
         .structuredContent,

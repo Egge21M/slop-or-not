@@ -5,6 +5,7 @@ import {
   customResponseSchema,
   questionIdSchema,
   submitQuestionSchema,
+  undoBinarySchema,
 } from "@slop-or-not/shared";
 import { createStore, DomainError } from "./store";
 import { createPhoneEvents } from "./events";
@@ -76,29 +77,19 @@ export function createApplication(options: {
               submitQuestionSchema.parse(await request.json()),
             ),
           );
-        const match = path.match(
-          /^\/api\/questions\/([^/]+)(\/response|\/custom-response)?$/,
-        );
+        const match = path.match(/^\/api\/questions\/([^/]+)(\/response|\/custom-response|\/undo)?$/);
         if (match) {
           const id = questionIdSchema.parse(match[1]);
-          if (request.method === "GET" && !match[2])
-            return Response.json(store.get(inboxId, id));
-          if (request.method === "POST" && match[2] === "/custom-response")
-            return Response.json(
-              store.respondCustom(
-                inboxId,
-                id,
-                customResponseSchema.parse(await request.json()).text,
-              ),
-            );
-          if (request.method === "POST" && match[2] === "/response")
-            return Response.json(
-              store.respond(
-                inboxId,
-                id,
-                binaryResponseSchema.parse(await request.json()).value,
-              ),
-            );
+          if (request.method === "GET" && !match[2]) return Response.json(store.get(inboxId, id));
+          if (request.method === "POST" && match[2] === "/custom-response") return Response.json(store.respondCustom(inboxId, id, customResponseSchema.parse(await request.json()).text));
+          if (request.method === "POST" && match[2] === "/undo") {
+            const input = undoBinarySchema.parse(await request.json());
+            return Response.json(store.undo(inboxId, id, input.choiceId));
+          }
+          if (request.method === "POST" && match[2] === "/response") {
+            const input = binaryResponseSchema.parse(await request.json());
+            return Response.json(store.respond(inboxId, id, input.value, input.choiceId));
+          }
         }
         return Response.json({ error: "Not found" }, { status: 404 });
       } catch (error) {

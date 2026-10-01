@@ -29,6 +29,15 @@ export const questions = sqliteTable(
       import("@slop-or-not/shared").QuestionResponse
     >(),
     finishedAt: integer("finished_at"),
+    provisional: text("provisional", { mode: "json" }).$type<
+      import("@slop-or-not/shared").ProvisionalBinary
+    >(),
   },
   (table) => [primaryKey({ columns: [table.inboxId, table.questionId] })],
 );
+// IDs only: remembers consumed browser commands after Undo or a competing choice.
+export const binaryChoices = sqliteTable("binary_choices", {
+  inboxId: text("inbox_id").notNull().references(() => inboxes.id, { onDelete: "cascade" }),
+  questionId: text("question_id").notNull(),
+  choiceId: text("choice_id").notNull(),
+}, (table) => [primaryKey({ columns: [table.inboxId, table.questionId, table.choiceId] })]);

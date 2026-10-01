@@ -8,6 +8,20 @@
       "when": 1790842119348,
       "tag": "0000_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790842500950,
+      "tag": "0001_left_starbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790842530951,
+      "tag": "0002_nebulous_starbolt",
+      "breakpoints": true
     }
   ]
 }
