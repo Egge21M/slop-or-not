@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react"
 import { PairingPanel } from "./components/PairingPanel"
 import { QuestionCard } from "./components/QuestionCard"
+import { PendingQuestionList } from "./components/PendingQuestionList"
 import { credentialKey, useInbox } from "./lib/useInbox"
 function readCredential() {
   try {
@@ -73,6 +74,11 @@ export default function App() {
               </p>
             </section>
           )}
+          <PendingQuestionList
+            questions={inbox.snapshot?.questions ?? []}
+            activeQuestionId={inbox.activeQuestionId}
+            onSelect={inbox.selectQuestion}
+          />
         </>
       )}
       <footer className="small-note">

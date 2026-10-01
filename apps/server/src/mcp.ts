@@ -53,6 +53,16 @@ export function createMcp(store: Store) {
         async (input) => output(() => store.submit(inboxId, input)),
       );
       server.registerTool(
+        "prioritize_question",
+        {
+          description:
+            "Promote a pending Question to priority without changing its original creation time. Oldest priority Questions come first. Repeated promotion has no further effect; a finished Question returns its existing outcome.",
+          inputSchema: getResponseSchema,
+          annotations: { idempotentHint: true, destructiveHint: false },
+        },
+        async ({ questionId }) => output(() => store.prioritize(inboxId, questionId)),
+      );
+      server.registerTool(
         "get_response",
         {
           description:

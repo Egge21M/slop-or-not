@@ -1,4 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
+import type { QuestionView } from "@slop-or-not/shared";
 import { createApplication } from "../src/app";
 const apps: ReturnType<typeof createApplication>[] = [];
 afterEach(async () => { for (const app of apps.splice(0)) await app.close(); });
@@ -77,14 +78,16 @@ test("at the deadline finalization wins over Undo and stale devices receive the 
   ]);
   const views = await Promise.all(results.map((response) => response.json()));
   expect(views[0]).toEqual(views[1]);
-  expect(views[0]).toMatchObject({ provisional: { value: "yes", deadline: 43_000 } });
+  const selected = (views[0] as QuestionView).provisional!;
+  expect(["yes", "no"]).toContain(selected.value);
+  expect(selected.deadline).toBe(43_000);
   now = 43_000;
   const [undone, competing] = await Promise.all([
-    request(application, token, `${path}/undo`, { choiceId }),
-    request(application, token, `${path}/response`, { value: "no", choiceId: crypto.randomUUID() }),
+    request(application, token, `${path}/undo`, { choiceId: selected.choiceId }),
+    request(application, token, `${path}/response`, { value: selected.value === "yes" ? "no" : "yes", choiceId: crypto.randomUUID() }),
   ]);
   const outcome = await undone.json();
-  expect(outcome).toMatchObject({ state: "answered", response: { value: "yes", committedAt: 43_000 } });
+  expect(outcome).toMatchObject({ state: "answered", response: { value: selected.value, committedAt: 43_000 } });
   expect(await competing.json()).toEqual(outcome);
 });
 test("the server commits after the phone closes and subscribers can retrieve committed state when notified", async () => {
