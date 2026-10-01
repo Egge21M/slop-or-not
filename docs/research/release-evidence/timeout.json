@@ -1,0 +1,218 @@
+{
+  "mode": "timeout",
+  "versions": {
+    "bun": "1.3.14",
+    "codex": "codex-cli 0.159.2",
+    "chrome": "154.0.8037.92",
+    "sdk": "2.2.0"
+  },
+  "checks": {
+    "paired": true,
+    "submitted": true,
+    "timeout": true,
+    "pendingAfterTimeout": true,
+    "restartAndRepeatedRetrieval": true
+  },
+  "trace": [
+    {
+      "method": "initialize",
+      "revision": null,
+      "offered": "2025-06-18"
+    },
+    {
+      "method": "notifications/initialized",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/list",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/call",
+      "tool": "submit_question",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/call",
+      "tool": "wait_for_response",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "initialize",
+      "revision": null,
+      "offered": "2025-06-18"
+    },
+    {
+      "method": "notifications/initialized",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/list",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/call",
+      "tool": "get_response",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/call",
+      "tool": "get_response",
+      "revision": "2025-06-18"
+    }
+  ],
+  "pendingAfterTimeout": {
+    "questionId": "01a0f6a8-539e-7000-a621-4efb4d9be3ba",
+    "wording": "Should we proceed after timeout?",
+    "project": "production-smoke",
+    "agentSession": "timeout",
+    "createdAt": 1790844632398,
+    "prio": false,
+    "state": "pending",
+    "response": null,
+    "provisional": null
+  },
+  "first": {
+    "exitCode": 0,
+    "items": [
+      {
+        "id": "item_0",
+        "type": "agent_message",
+        "text": "I’ll submit the question, wait for the response with the requested 20-second wait, and stop after the client timeout."
+      },
+      {
+        "id": "item_1",
+        "type": "mcp_tool_call",
+        "server": "slop_not",
+        "tool": "submit_question",
+        "arguments": {
+          "questionId": "01a0f6a8-539e-7000-a621-4efb4d9be3ba",
+          "wording": "Should we proceed after timeout?",
+          "project": "production-smoke",
+          "agentSession": "timeout"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"questionId\":\"01a0f6a8-539e-7000-a621-4efb4d9be3ba\",\"wording\":\"Should we proceed after timeout?\",\"project\":\"production-smoke\",\"agentSession\":\"timeout\",\"createdAt\":1790844632398,\"prio\":false,\"state\":\"pending\",\"response\":null}"
+            }
+          ],
+          "structured_content": {
+            "questionId": "01a0f6a8-539e-7000-a621-4efb4d9be3ba",
+            "wording": "Should we proceed after timeout?",
+            "project": "production-smoke",
+            "agentSession": "timeout",
+            "createdAt": 1790844632398,
+            "prio": false,
+            "state": "pending",
+            "response": null
+          }
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_2",
+        "type": "mcp_tool_call",
+        "server": "slop_not",
+        "tool": "wait_for_response",
+        "arguments": {
+          "questionId": "01a0f6a8-539e-7000-a621-4efb4d9be3ba",
+          "waitMs": 20000
+        },
+        "result": null,
+        "error": {
+          "message": "tool call error: tool call failed for `slop_not/wait_for_response`\n\nCaused by:\n    timed out awaiting tools/call after 1000ms"
+        },
+        "status": "failed"
+      },
+      {
+        "id": "item_3",
+        "type": "agent_message",
+        "text": "Question submitted. `wait_for_response` requested 20,000 ms but hit the client timeout after 1,000 ms. No further calls were made."
+      }
+    ]
+  },
+  "reconnect": {
+    "exitCode": 0,
+    "items": [
+      {
+        "id": "item_0",
+        "type": "agent_message",
+        "text": "I’ll call `slop_not get_response` twice for that question ID and report each exact result."
+      },
+      {
+        "id": "item_1",
+        "type": "mcp_tool_call",
+        "server": "slop_not",
+        "tool": "get_response",
+        "arguments": {
+          "questionId": "01a0f6a8-539e-7000-a621-4efb4d9be3ba"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"questionId\":\"01a0f6a8-539e-7000-a621-4efb4d9be3ba\",\"wording\":\"Should we proceed after timeout?\",\"project\":\"production-smoke\",\"agentSession\":\"timeout\",\"createdAt\":1790844632398,\"prio\":false,\"state\":\"answered\",\"response\":{\"type\":\"binary\",\"value\":\"yes\",\"committedAt\":1790844640520}}"
+            }
+          ],
+          "structured_content": {
+            "questionId": "01a0f6a8-539e-7000-a621-4efb4d9be3ba",
+            "wording": "Should we proceed after timeout?",
+            "project": "production-smoke",
+            "agentSession": "timeout",
+            "createdAt": 1790844632398,
+            "prio": false,
+            "state": "answered",
+            "response": {
+              "type": "binary",
+              "value": "yes",
+              "committedAt": 1790844640520
+            }
+          }
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_2",
+        "type": "mcp_tool_call",
+        "server": "slop_not",
+        "tool": "get_response",
+        "arguments": {
+          "questionId": "01a0f6a8-539e-7000-a621-4efb4d9be3ba"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"questionId\":\"01a0f6a8-539e-7000-a621-4efb4d9be3ba\",\"wording\":\"Should we proceed after timeout?\",\"project\":\"production-smoke\",\"agentSession\":\"timeout\",\"createdAt\":1790844632398,\"prio\":false,\"state\":\"answered\",\"response\":{\"type\":\"binary\",\"value\":\"yes\",\"committedAt\":1790844640520}}"
+            }
+          ],
+          "structured_content": {
+            "questionId": "01a0f6a8-539e-7000-a621-4efb4d9be3ba",
+            "wording": "Should we proceed after timeout?",
+            "project": "production-smoke",
+            "agentSession": "timeout",
+            "createdAt": 1790844632398,
+            "prio": false,
+            "state": "answered",
+            "response": {
+              "type": "binary",
+              "value": "yes",
+              "committedAt": 1790844640520
+            }
+          }
+        },
+        "error": null,
+        "status": "completed"
+      },
+      {
+        "id": "item_3",
+        "type": "agent_message",
+        "text": "Both calls returned the same exact outcome.\n\nCall 1:\n```json\n{\"questionId\":\"01a0f6a8-539e-7000-a621-4efb4d9be3ba\",\"wording\":\"Should we proceed after timeout?\",\"project\":\"production-smoke\",\"agentSession\":\"timeout\",\"createdAt\":1790844632398,\"prio\":false,\"state\":\"answered\",\"response\":{\"type\":\"binary\",\"value\":\"yes\",\"committedAt\":1790844640520}}\n```\n\nCall 2:\n```json\n{\"questionId\":\"01a0f6a8-539e-7000-a621-4efb4d9be3ba\",\"wording\":\"Should we proceed after timeout?\",\"project\":\"production-smoke\",\"agentSession\":\"timeout\",\"createdAt\":1790844632398,\"prio\":false,\"state\":\"answered\",\"response\":{\"type\":\"binary\",\"value\":\"yes\",\"committedAt\":1790844640520}}\n```"
+      }
+    ]
+  }
+}

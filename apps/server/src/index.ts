@@ -1,8 +1,19 @@
 import { createApplication } from "./app";
 import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, isAbsolute } from "node:path";
 const databasePath = process.env.DATABASE_PATH ?? "./data/slop.sqlite";
 const jwtSecret = process.env.JWT_SECRET;
+let publicOrigin = process.env.PUBLIC_ORIGIN;
+if (process.env.NODE_ENV === "production") {
+  let url: URL | undefined;
+  try { url = publicOrigin ? new URL(publicOrigin) : undefined; } catch {}
+  if (!url || url.protocol !== "https:" || url.username || url.password ||
+      url.pathname !== "/" || url.search || url.hash)
+    throw new Error("PUBLIC_ORIGIN must be a public HTTPS origin without credentials, path, query, or fragment in production");
+  publicOrigin = url.origin;
+  if (!process.env.DATABASE_PATH || !isAbsolute(databasePath))
+    throw new Error("DATABASE_PATH must be an explicit absolute path on persistent storage in production");
+}
 if (!jwtSecret)
   throw new Error(
     "JWT_SECRET is required (at least 32 bytes; keep it stable across restarts)",
@@ -12,7 +23,7 @@ if (databasePath !== ":memory:")
 const application = createApplication({
   databasePath,
   jwtSecret,
-  publicOrigin: process.env.PUBLIC_ORIGIN,
+  publicOrigin,
   webDirectory: new URL("../../web/dist", import.meta.url).pathname,
 });
 const server = Bun.serve({

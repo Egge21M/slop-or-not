@@ -1,0 +1,161 @@
+{
+  "result": "passed",
+  "versions": {
+    "bun": "1.3.14",
+    "chrome": "154.0.8037.92"
+  },
+  "viewport": "390x844 touch",
+  "artifact": "bundle + checked-in migrations + Vite assets; no node_modules",
+  "checks": [
+    "phone pairing/copy/token paste",
+    "Yes/No/Custom controls",
+    "right/left/up touch swipes",
+    "Undo",
+    "stable open card/priority/manual selection",
+    "authenticated SSE reconnect and authoritative refresh",
+    "actual process restart/same DB/JWT/persisted deadline",
+    "history",
+    "Inbox deletion"
+  ],
+  "streamRequests": 4,
+  "snapshotRequests": 47,
+  "streamEvidence": [
+    {
+      "atMs": 1544,
+      "kind": "changed"
+    },
+    {
+      "atMs": 2532,
+      "kind": "changed"
+    },
+    {
+      "atMs": 2669,
+      "kind": "changed"
+    },
+    {
+      "atMs": 3248,
+      "kind": "changed"
+    },
+    {
+      "atMs": 3445,
+      "kind": "changed"
+    },
+    {
+      "atMs": 3563,
+      "kind": "changed"
+    },
+    {
+      "atMs": 6566,
+      "kind": "changed"
+    },
+    {
+      "atMs": 6604,
+      "kind": "changed"
+    },
+    {
+      "atMs": 7059,
+      "kind": "changed"
+    },
+    {
+      "atMs": 10064,
+      "kind": "changed"
+    },
+    {
+      "atMs": 10101,
+      "kind": "changed"
+    },
+    {
+      "atMs": 10535,
+      "kind": "changed"
+    },
+    {
+      "atMs": 13537,
+      "kind": "changed"
+    },
+    {
+      "atMs": 13562,
+      "kind": "changed"
+    },
+    {
+      "atMs": 13681,
+      "kind": "changed"
+    },
+    {
+      "atMs": 16539,
+      "kind": "heartbeat"
+    },
+    {
+      "atMs": 16674,
+      "kind": "changed"
+    },
+    {
+      "atMs": 16701,
+      "kind": "changed"
+    },
+    {
+      "atMs": 17229,
+      "kind": "changed"
+    },
+    {
+      "atMs": 17264,
+      "kind": "changed"
+    },
+    {
+      "atMs": 17439,
+      "kind": "changed"
+    },
+    {
+      "atMs": 17472,
+      "kind": "changed"
+    },
+    {
+      "atMs": 17529,
+      "kind": "changed"
+    },
+    {
+      "atMs": 17540,
+      "kind": "changed"
+    },
+    {
+      "atMs": 18197,
+      "kind": "changed"
+    },
+    {
+      "atMs": 18533,
+      "kind": "changed"
+    },
+    {
+      "atMs": 18541,
+      "kind": "changed"
+    },
+    {
+      "atMs": 18689,
+      "kind": "changed"
+    },
+    {
+      "atMs": 19289,
+      "kind": "changed"
+    },
+    {
+      "atMs": 21696,
+      "kind": "changed"
+    },
+    {
+      "atMs": 34287,
+      "kind": "heartbeat"
+    },
+    {
+      "atMs": 49286,
+      "kind": "heartbeat"
+    },
+    {
+      "atMs": 64287,
+      "kind": "heartbeat"
+    },
+    {
+      "atMs": 64722,
+      "kind": "unavailable"
+    }
+  ],
+  "limits": "Local HTTP proxy simulates TLS-origin forwarding only; Docker image and hosted Fly HTTPS/volume/proxy are unverified."
+}
