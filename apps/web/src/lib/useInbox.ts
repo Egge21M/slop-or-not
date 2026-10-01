@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import type { InboxSnapshot } from "@slop-or-not/shared"
-import { ApiError, fetchInbox } from "./api"
+import type { InboxSnapshot, ResponseHistory } from "@slop-or-not/shared"
+import { ApiError, fetchInbox, fetchHistory } from "./api"
 export const credentialKey = "slop-or-not:credential"
 export function useInbox(token: string | null, onUnavailable: () => void) {
   const [snapshot, setSnapshot] = useState<InboxSnapshot | null>(null)
+  const [history, setHistory] = useState<ResponseHistory | null>(null)
   const [activeQuestionId, selectQuestion] = useState<string | null>(null)
   const [connection, setConnection] = useState("Connecting…")
   const [error, setError] = useState<string | null>(null)
@@ -12,9 +13,12 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
   const reconcile = useCallback(
     async (signal?: AbortSignal) => {
       if (!token) return
-      const next = await fetchInbox(token, signal)
+      const [next, responses] = await Promise.all([
+        fetchInbox(token, signal), fetchHistory(token, signal),
+      ])
       if (signal?.aborted) return
       setSnapshot(next)
+      setHistory(responses)
       selectQuestion((current) =>
         next.questions.some((question) => question.questionId === current)
           ? current
@@ -26,6 +30,7 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
   )
   useEffect(() => {
     setSnapshot(null)
+    setHistory(null)
     selectQuestion(null)
     if (!token) return
     const controller = new AbortController()
@@ -95,6 +100,7 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
     ) ?? null
   return {
     snapshot,
+    history,
     activeQuestion,
     activeQuestionId,
     selectQuestion,

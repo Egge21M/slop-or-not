@@ -2,6 +2,7 @@ import { useCallback, useState } from "react"
 import { PairingPanel } from "./components/PairingPanel"
 import { QuestionCard } from "./components/QuestionCard"
 import { PendingQuestionList } from "./components/PendingQuestionList"
+import { ResponseHistory } from "./components/ResponseHistory"
 import { credentialKey, useInbox } from "./lib/useInbox"
 function readCredential() {
   try {
@@ -79,6 +80,7 @@ export default function App() {
             activeQuestionId={inbox.activeQuestionId}
             onSelect={inbox.selectQuestion}
           />
+          <ResponseHistory history={inbox.history} />
         </>
       )}
       <footer className="small-note">

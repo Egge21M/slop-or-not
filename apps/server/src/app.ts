@@ -70,6 +70,8 @@ export function createApplication(options: {
           });
         if (path === "/api/inbox" && request.method === "GET")
           return Response.json(store.snapshot(inboxId));
+        if (path === "/api/history" && request.method === "GET")
+          return Response.json(store.history(inboxId));
         if (path === "/api/questions" && request.method === "POST")
           return Response.json(
             store.submit(

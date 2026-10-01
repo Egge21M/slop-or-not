@@ -8,6 +8,12 @@ export const inboxes = sqliteTable("inboxes", {
   id: text("id").primaryKey(),
   createdAt: integer("created_at").notNull(),
 });
+// The only retained record once a finished Question's content expires.
+export const questionMarkers = sqliteTable("question_markers", {
+  inboxId: text("inbox_id").notNull().references(() => inboxes.id, { onDelete: "cascade" }),
+  questionId: text("question_id").notNull(),
+  fingerprint: text("fingerprint").notNull(),
+}, (table) => [primaryKey({ columns: [table.inboxId, table.questionId] })]);
 export const questions = sqliteTable(
   "questions",
   {

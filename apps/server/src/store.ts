@@ -1,13 +1,15 @@
 import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
-import { binaryChoices, inboxes, questions } from "./schema";
+import { and, asc, desc, eq, isNotNull, lte } from "drizzle-orm";
+import { binaryChoices, inboxes, questions, questionMarkers } from "./schema";
 import type {
   QuestionView,
+  QuestionOutcome,
   SubmitQuestion,
   BinaryResponse,
   InboxSnapshot,
+  ResponseHistory,
 } from "@slop-or-not/shared";
 
 export class DomainError extends Error {
@@ -53,6 +55,13 @@ export function createStore(options: {
   };
   const scope = (inboxId: string, questionId: string) =>
     and(eq(questions.inboxId, inboxId), eq(questions.questionId, questionId));
+  const markerScope = (inboxId: string, questionId: string) =>
+    and(eq(questionMarkers.inboxId, inboxId), eq(questionMarkers.questionId, questionId));
+  const expired = (inboxId: string, questionId: string): QuestionOutcome => {
+    if (!db.select().from(questionMarkers).where(markerScope(inboxId, questionId)).get())
+      throw new DomainError(404, "Question not found");
+    return { questionId, state: "expired" };
+  };
   const view = (row: typeof questions.$inferSelect): QuestionView => ({
     questionId: row.questionId,
     wording: row.wording,
@@ -67,7 +76,7 @@ export function createStore(options: {
     response: row.response,
     provisional: row.provisional,
   });
-  const get = (inboxId: string, questionId: string) => {
+  const get = (inboxId: string, questionId: string): QuestionOutcome => {
     requireInbox(inboxId);
     reconcileDeadlines();
     const row = db
@@ -75,7 +84,7 @@ export function createStore(options: {
       .from(questions)
       .where(scope(inboxId, questionId))
       .get();
-    if (!row) throw new DomainError(404, "Question not found");
+    if (!row) return expired(inboxId, questionId);
     return view(row);
   };
   const publish = (inboxId: string) => {
@@ -83,6 +92,7 @@ export function createStore(options: {
       listener({ type: "changed", inboxId });
   };
   let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
+  const retentionMs = 7 * 24 * 60 * 60 * 1000;
   function scheduleDeadline() {
     clearTimeout(deadlineTimer);
     if (closed) return;
@@ -92,10 +102,14 @@ export function createStore(options: {
       .where(isNotNull(questions.provisional))
       .all()
       .map((row) => row.provisional!.deadline);
+    for (const row of db.select({ finishedAt: questions.finishedAt }).from(questions)
+      .where(isNotNull(questions.finishedAt)).all()) {
+      deadlines.push(row.finishedAt! + retentionMs);
+    }
     if (!deadlines.length) return;
     deadlineTimer = setTimeout(
       reconcileDeadlines,
-      Math.max(1, Math.min(...deadlines) - clock()),
+      Math.max(1, Math.min(2_147_483_647, Math.min(...deadlines) - clock())),
     );
     deadlineTimer.unref();
   }
@@ -126,6 +140,17 @@ export function createStore(options: {
           .run();
         changedInboxes.add(row.inboxId);
       }
+      for (const row of tx.select().from(questions)
+        .where(lte(questions.finishedAt, now - retentionMs)).all()) {
+        tx.delete(binaryChoices).where(and(
+          eq(binaryChoices.inboxId, row.inboxId),
+          eq(binaryChoices.questionId, row.questionId),
+        )).run();
+        // Markers were backfilled by migration and are inserted with submissions.
+        // Deleting the full row removes wording, metadata, Markdown and Response.
+        tx.delete(questions).where(scope(row.inboxId, row.questionId)).run();
+        changedInboxes.add(row.inboxId);
+      }
     });
     scheduleDeadline();
     for (const inboxId of changedInboxes) publish(inboxId);
@@ -141,6 +166,16 @@ export function createStore(options: {
     },
     hasInbox,
     get,
+    history(inboxId: string): ResponseHistory {
+      requireInbox(inboxId);
+      reconcileDeadlines();
+      return {
+        questions: db.select().from(questions)
+          .where(and(eq(questions.inboxId, inboxId), eq(questions.state, "answered")))
+          .orderBy(desc(questions.finishedAt), asc(questions.questionId))
+          .all().map(view),
+      };
+    },
     snapshot(inboxId: string): InboxSnapshot {
       requireInbox(inboxId);
       reconcileDeadlines();
@@ -175,17 +210,20 @@ export function createStore(options: {
         )
         .digest("hex");
       let changed = false;
-      const result = db.transaction((tx) => {
+      const result = db.transaction((tx): QuestionOutcome => {
         const existing = tx
           .select()
           .from(questions)
           .where(scope(inboxId, input.questionId))
           .get();
-        if (existing) {
-          if (existing.fingerprint !== fingerprint)
+        const marker = tx.select().from(questionMarkers)
+          .where(markerScope(inboxId, input.questionId)).get();
+        if (marker) {
+          if (marker.fingerprint !== fingerprint)
             throw new DomainError(409, "Question content conflict");
-          return view(existing);
+          return existing ? view(existing) : { questionId: input.questionId, state: "expired" };
         }
+        tx.insert(questionMarkers).values({ inboxId, questionId: input.questionId, fingerprint }).run();
         const inserted = tx
           .insert(questions)
           .values({ ...input, inboxId, fingerprint, createdAt: clock() })
@@ -207,7 +245,7 @@ export function createStore(options: {
           .from(questions)
           .where(scope(inboxId, questionId))
           .get();
-        if (!row) throw new DomainError(404, "Question not found");
+        if (!row) return expired(inboxId, questionId);
         if (row.state !== "pending" || row.prio) return view(row);
         const updated = tx
           .update(questions)
@@ -238,7 +276,7 @@ export function createStore(options: {
           .from(questions)
           .where(scope(inboxId, questionId))
           .get();
-        if (!row) throw new DomainError(404, "Question not found");
+        if (!row) return expired(inboxId, questionId);
         const receipt = tx
           .select()
           .from(binaryChoices)
@@ -289,7 +327,7 @@ export function createStore(options: {
           .from(questions)
           .where(scope(inboxId, questionId))
           .get();
-        if (!row) throw new DomainError(404, "Question not found");
+        if (!row) return expired(inboxId, questionId);
         if (row.state !== "pending" || row.provisional?.choiceId !== choiceId)
           return view(row);
         const updated = tx
@@ -315,7 +353,7 @@ export function createStore(options: {
           .from(questions)
           .where(scope(inboxId, questionId))
           .get();
-        if (!row) throw new DomainError(404, "Question not found");
+        if (!row) return expired(inboxId, questionId);
         if (row.state !== "pending") return view(row);
         const committedAt = clock();
         const updated = tx
@@ -348,7 +386,7 @@ export function createStore(options: {
           .from(questions)
           .where(scope(inboxId, questionId))
           .get();
-        if (!row) throw new DomainError(404, "Question not found");
+        if (!row) return expired(inboxId, questionId);
         if (row.state !== "pending") return view(row);
         const updated = tx
           .update(questions)

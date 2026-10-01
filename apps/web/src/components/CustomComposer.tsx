@@ -1,5 +1,5 @@
 import { useRef, useState } from "react"
-import { customResponseSchema, type QuestionView } from "@slop-or-not/shared"
+import { customResponseSchema, type QuestionOutcome } from "@slop-or-not/shared"
 import { ApiError, sendCustom } from "../lib/api"
 import { Button } from "./ui/button"
 
@@ -16,7 +16,7 @@ export function CustomComposer({
   onClose: () => void
   onChanged: () => Promise<void>
   onUnavailable: () => void
-  onOutcome: (outcome: QuestionView) => void
+  onOutcome: (outcome: QuestionOutcome) => void
 }) {
   const [text, setText] = useState("")
   const [busy, setBusy] = useState(false)
@@ -32,6 +32,7 @@ export function CustomComposer({
       const outcome = await sendCustom(token, questionId, text)
       onOutcome(outcome)
       if (
+        outcome.state !== "expired" &&
         outcome.response?.type === "custom" &&
         outcome.response.text === text
       ) {

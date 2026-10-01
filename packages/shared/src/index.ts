@@ -68,3 +68,6 @@ export type QuestionView = SubmitQuestion & {
   provisional: ProvisionalBinary | null;
 };
 export type InboxSnapshot = { inboxId: string; questions: QuestionView[] };
+export type ResponseHistory = { questions: QuestionView[] };
+export type ExpiredQuestion = { questionId: string; state: "expired" };
+export type QuestionOutcome = QuestionView | ExpiredQuestion;
