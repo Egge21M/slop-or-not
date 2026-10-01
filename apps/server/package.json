@@ -1,0 +1,22 @@
+{
+  "name": "@slop-or-not/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --target=bun --outdir=dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@slop-or-not/shared": "workspace:*",
+    "@modelcontextprotocol/server": "2.2.0",
+    "drizzle-orm": "0.45.3",
+    "jose": "6.2.12",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.2.0",
+    "drizzle-kit": "0.31.9"
+  }
+}
