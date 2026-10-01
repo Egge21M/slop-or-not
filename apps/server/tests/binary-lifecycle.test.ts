@@ -30,6 +30,20 @@ test("an acknowledged choice stays provisional until its stored three-second dea
   now = 13_000;
   expect(await (await request(application, token, `/api/questions/${question.questionId}`)).json()).toMatchObject({ state: "answered", response: { type: "binary", value: "yes", committedAt: 13_000 }, provisional: null });
 });
+test("phone acknowledgments and refreshes expose server time without restarting the Undo window", async () => {
+  let now = 10_000;
+  const application = app(() => now);
+  const { token } = await pair(application);
+  const selected = await request(application, token, `/api/questions/${question.questionId}/response`, { value: "yes", choiceId });
+  expect(selected.headers.get("x-slop-server-time")).toBe("10000");
+  expect(await selected.json()).toMatchObject({ provisional: { deadline: 13_000 } });
+  now = 12_000;
+  const refreshed = await request(application, token, "/api/inbox");
+  expect(refreshed.headers.get("x-slop-server-time")).toBe("12000");
+  expect(await refreshed.json()).toMatchObject({ questions: [{ provisional: { deadline: 13_000 } }] });
+  const undone = await request(application, token, `/api/questions/${question.questionId}/undo`, { choiceId });
+  expect(await undone.json()).toMatchObject({ state: "pending", provisional: null, response: null });
+});
 test("Undo withdraws only its choice and replaying an acknowledged request cannot reset or recreate it", async () => {
   let now = 20_000;
   const application = app(() => now);

@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-01",
+  "browser": "Chrome for Testing Stable 154.0.8037.92",
+  "viewport": { "width": 390, "height": 844 },
+  "fixtures": "Synthetic questions, in-memory SQLite, loopback HTTP, temporary Playwright Core harnesses; no credentials recorded",
+  "before": [
+    {
+      "case": "clock-skew",
+      "browserClockSkewMs": 60000,
+      "undoDisabled": true,
+      "serverState": "pending",
+      "serverUndoStillAvailable": true
+    },
+    {
+      "case": "out-of-order-refresh",
+      "reopenedFinishedCard": true,
+      "yesEnabledOnFinishedCard": true,
+      "serverState": "answered"
+    }
+  ],
+  "after": [
+    {
+      "case": "clock-skew",
+      "browserClockSkewMs": 60000,
+      "remainingSecondsAfterReload": 1.9,
+      "deadlinePreserved": true,
+      "undoDisabled": false,
+      "undoSucceededAfterWallClockChange": true
+    },
+    {
+      "case": "clock-skew",
+      "browserClockSkewMs": -60000,
+      "remainingSecondsAfterReload": 2,
+      "deadlinePreserved": true,
+      "undoDisabled": false,
+      "undoSucceededAfterWallClockChange": true
+    },
+    {
+      "case": "out-of-order-refresh",
+      "reopenedFinishedCard": false,
+      "userSelectionPreserved": true,
+      "historyPreserved": true,
+      "serverStateOfFinishedQuestion": "answered"
+    },
+    {
+      "case": "request-latency",
+      "outboundDelayMs": 1800,
+      "estimatedCountdownZero": true,
+      "serverUndoStillAvailable": true,
+      "undoDisabled": false,
+      "undoSucceeded": true
+    }
+  ],
+  "httpRegression": {
+    "red": "Expected x-slop-server-time 10000; received null",
+    "green": "Server time advances to 12000; original deadline remains 13000; Undo restores pending with no provisional choice"
+  },
+  "finalCheck": {
+    "command": "bun run check",
+    "execution": "Elevated local execution for nested startup-process binding",
+    "testsPassed": 42,
+    "assertions": 304,
+    "failures": 0,
+    "strictTypechecks": "passed in all three workspaces",
+    "viteFrontendBuild": "passed",
+    "bunServerBuild": "passed"
+  },
+  "externalReleaseGates": {
+    "dockerImageBuildAndRun": "unverified",
+    "hostedFlyHttpsSmoke": "unverified"
+  }
+}

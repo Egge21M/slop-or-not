@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import type { QuestionView, QuestionOutcome } from "@slop-or-not/shared"
 import { Button } from "./ui/button"
-import { sendBinary, undoBinary, ApiError } from "../lib/api"
+import { sendBinary, undoBinary, getUndoDeadline, ApiError } from "../lib/api"
 import { useQuestionSwipe } from "../lib/useQuestionSwipe"
 import { SupportingMarkdown } from "./SupportingMarkdown"
 import { CustomComposer } from "./CustomComposer"
@@ -21,7 +21,25 @@ export function QuestionCard({
   const [error, setError] = useState<string | null>(null)
   const [authoritative, setAuthoritative] = useState<QuestionOutcome>(question)
   const retained = authoritative.state === "expired" ? null : authoritative
-  const [now, setNow] = useState(Date.now)
+  const [now, setNow] = useState(() => performance.now())
+  const countdown = useRef<{
+    choiceId: string
+    deadline: number
+    refreshed: boolean
+  } | null>(null)
+  if (!retained?.provisional) {
+    countdown.current = null
+  } else {
+    const { choiceId } = retained.provisional
+    const deadline = getUndoDeadline(retained.provisional)
+    // A repeated receipt for the same choice must never restart its countdown.
+    countdown.current = countdown.current?.choiceId === choiceId
+      ? {
+          ...countdown.current,
+          deadline: Math.min(countdown.current.deadline, deadline),
+        }
+      : { choiceId, deadline, refreshed: false }
+  }
   const unsent = useRef<{ value: "yes" | "no"; choiceId: string } | null>(null)
   useEffect(() => {
     // An older Inbox fetch must not reopen a card after a final action receipt.
@@ -39,19 +57,22 @@ export function QuestionCard({
   }, [question])
   useEffect(() => {
     if (!retained?.provisional) return
-    let refreshed = false
     const timer = setInterval(() => {
-      const current = Date.now()
+      const current = performance.now()
       setNow(current)
-      if (current >= retained.provisional!.deadline && !refreshed) {
-        refreshed = true
+      if (
+        countdown.current &&
+        current >= countdown.current.deadline &&
+        !countdown.current.refreshed
+      ) {
+        countdown.current.refreshed = true
         void onChanged().catch(() => {})
       }
     }, 100)
     return () => clearInterval(timer)
   }, [retained?.provisional, onChanged])
   const remaining = retained?.provisional
-    ? Math.max(0, retained.provisional.deadline - now)
+    ? Math.max(0, (countdown.current?.deadline ?? 0) - Math.max(now, performance.now()))
     : 0
   async function answer(value: "yes" | "no") {
     if (busy || retained?.provisional || authoritative.state !== "pending")
@@ -123,13 +144,11 @@ export function QuestionCard({
       setBusy(false)
     }
   }
+  const binaryDisabled =
+    busy || composing || !!retained?.provisional ||
+    authoritative.state !== "pending" || !!unsent.current
   const gestures = useQuestionSwipe({
-    disabled:
-      busy ||
-      composing ||
-      !!retained?.provisional ||
-      authoritative.state !== "pending" ||
-      !!unsent.current,
+    disabled: binaryDisabled,
     onBinary: (value) => void answer(value),
     onCustom: () => setComposing(true),
   })
@@ -165,26 +184,14 @@ export function QuestionCard({
         <Button
           variant="outline"
           className="large-button"
-          disabled={
-            busy ||
-            composing ||
-            !!retained?.provisional ||
-            authoritative.state !== "pending" ||
-            !!unsent.current
-          }
+          disabled={binaryDisabled}
           onClick={() => void answer("no")}
         >
           No
         </Button>
         <Button
           className="large-button"
-          disabled={
-            busy ||
-            composing ||
-            !!retained?.provisional ||
-            authoritative.state !== "pending" ||
-            !!unsent.current
-          }
+          disabled={binaryDisabled}
           onClick={() => void answer("yes")}
         >
           Yes
@@ -227,7 +234,7 @@ export function QuestionCard({
           </p>
           <Button
             variant="outline"
-            disabled={busy || remaining === 0}
+            disabled={busy}
             onClick={() => void undo()}
           >
             Undo

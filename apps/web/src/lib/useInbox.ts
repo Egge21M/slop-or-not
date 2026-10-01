@@ -9,16 +9,23 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
   const [connection, setConnection] = useState("Connecting…")
   const [error, setError] = useState<string | null>(null)
   const currentToken = useRef(token)
+  const refreshGeneration = useRef(0)
   currentToken.current = token
   const unavailable = useRef(onUnavailable)
   unavailable.current = onUnavailable
   const reconcile = useCallback(
     async (signal?: AbortSignal) => {
       if (!token) return
+      // SSE and action refreshes overlap. The newest request owns the whole view.
+      const generation = ++refreshGeneration.current
       const [next, responses] = await Promise.all([
         fetchInbox(token, signal), fetchHistory(token, signal),
       ])
-      if (signal?.aborted || currentToken.current !== token) return
+      if (
+        signal?.aborted ||
+        currentToken.current !== token ||
+        generation !== refreshGeneration.current
+      ) return
       setSnapshot(next)
       setHistory(responses)
       selectQuestion((current) =>

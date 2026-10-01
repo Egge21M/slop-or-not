@@ -55,6 +55,8 @@ export function createStore(options: {
   };
   const scope = (inboxId: string, questionId: string) =>
     and(eq(questions.inboxId, inboxId), eq(questions.questionId, questionId));
+  const questionRow = (source: Pick<typeof db, "select">, inboxId: string, questionId: string) =>
+    source.select().from(questions).where(scope(inboxId, questionId)).get();
   const markerScope = (inboxId: string, questionId: string) =>
     and(eq(questionMarkers.inboxId, inboxId), eq(questionMarkers.questionId, questionId));
   const expired = (inboxId: string, questionId: string): QuestionOutcome => {
@@ -79,11 +81,7 @@ export function createStore(options: {
   const get = (inboxId: string, questionId: string): QuestionOutcome => {
     requireInbox(inboxId);
     reconcileDeadlines();
-    const row = db
-      .select()
-      .from(questions)
-      .where(scope(inboxId, questionId))
-      .get();
+    const row = questionRow(db, inboxId, questionId);
     if (!row) return expired(inboxId, questionId);
     return view(row);
   };
@@ -223,11 +221,7 @@ export function createStore(options: {
         .digest("hex");
       let changed = false;
       const result = db.transaction((tx): QuestionOutcome => {
-        const existing = tx
-          .select()
-          .from(questions)
-          .where(scope(inboxId, input.questionId))
-          .get();
+        const existing = questionRow(tx, inboxId, input.questionId);
         const marker = tx.select().from(questionMarkers)
           .where(markerScope(inboxId, input.questionId)).get();
         if (marker) {
@@ -252,11 +246,7 @@ export function createStore(options: {
       reconcileDeadlines();
       let changed = false;
       const result = db.transaction((tx) => {
-        const row = tx
-          .select()
-          .from(questions)
-          .where(scope(inboxId, questionId))
-          .get();
+        const row = questionRow(tx, inboxId, questionId);
         if (!row) return expired(inboxId, questionId);
         if (row.state !== "pending" || row.prio) return view(row);
         const updated = tx
@@ -283,11 +273,7 @@ export function createStore(options: {
       reconcileDeadlines();
       let changed = false;
       const result = db.transaction((tx) => {
-        const row = tx
-          .select()
-          .from(questions)
-          .where(scope(inboxId, questionId))
-          .get();
+        const row = questionRow(tx, inboxId, questionId);
         if (!row) return expired(inboxId, questionId);
         const receipt = tx
           .select()
@@ -334,11 +320,7 @@ export function createStore(options: {
       reconcileDeadlines();
       let changed = false;
       const result = db.transaction((tx) => {
-        const row = tx
-          .select()
-          .from(questions)
-          .where(scope(inboxId, questionId))
-          .get();
+        const row = questionRow(tx, inboxId, questionId);
         if (!row) return expired(inboxId, questionId);
         if (row.state !== "pending" || row.provisional?.choiceId !== choiceId)
           return view(row);
@@ -360,11 +342,7 @@ export function createStore(options: {
       reconcileDeadlines();
       let changed = false;
       const result = db.transaction((tx) => {
-        const row = tx
-          .select()
-          .from(questions)
-          .where(scope(inboxId, questionId))
-          .get();
+        const row = questionRow(tx, inboxId, questionId);
         if (!row) return expired(inboxId, questionId);
         if (row.state !== "pending") return view(row);
         const committedAt = clock();
@@ -393,11 +371,7 @@ export function createStore(options: {
       reconcileDeadlines();
       let changed = false;
       const result = db.transaction((tx) => {
-        const row = tx
-          .select()
-          .from(questions)
-          .where(scope(inboxId, questionId))
-          .get();
+        const row = questionRow(tx, inboxId, questionId);
         if (!row) return expired(inboxId, questionId);
         if (row.state !== "pending") return view(row);
         const updated = tx
