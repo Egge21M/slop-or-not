@@ -78,13 +78,15 @@ export function createApplication(options: {
             ),
           );
         const match = path.match(
-          /^\/api\/questions\/([^/]+)(\/response|\/custom-response|\/undo|\/priority)?$/,
+          /^\/api\/questions\/([^/]+)(\/response|\/custom-response|\/undo|\/priority|\/cancel)?$/,
         );
 
         if (match) {
           const id = questionIdSchema.parse(match[1]);
           if (request.method === "GET" && !match[2])
             return Response.json(store.get(inboxId, id));
+          if (request.method === "POST" && match[2] === "/cancel")
+            return Response.json(store.cancel(inboxId, id));
           if (request.method === "POST" && match[2] === "/custom-response")
             return Response.json(
               store.respondCustom(

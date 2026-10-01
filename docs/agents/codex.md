@@ -17,6 +17,8 @@ Choose a UUIDv7 Question ID **before** submitting, and retain it with the exact 
 
 An identical `submit_question` retry returns the current state without another card. Reusing the ID with different content is a conflict. Questions are immutable; changing the request requires explicit cancellation and a new ID. A pending Question has no delivered Response. A provisional binary choice during its Undo window also has no delivered Response.
 
+Call `cancel_question` with the original `questionId` when you explicitly withdraw a Question. It returns `cancelled` with `response: null` if cancellation wins. The first committed Response or cancellation wins; cancellation may win during the three-second Undo window, while an already due binary choice or committed Custom answer remains final. Repeated cancellation returns the same authoritative outcome. Retrieve or wait again after reconnect to observe it. Cancelled Questions leave the phone's pending queue and cannot receive a Response. The authenticated HTTP equivalent is `POST /api/questions/:questionId/cancel`.
+
 Choose the interaction mode based on the work:
 
 - **Wait for input:** submit, then call `wait_for_response` with the same `questionId`. `waitMs` defaults to 10,000 and accepts integers from 0 through 20,000. A committed outcome returns when available. At the bound the tool returns the authoritative current state; `pending` means no final answer yet. Reissue a wait when human input remains necessary. Keep the 30-second client timeout above the 20-second application bound.
