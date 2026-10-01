@@ -8,6 +8,8 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
   const [activeQuestionId, selectQuestion] = useState<string | null>(null)
   const [connection, setConnection] = useState("Connecting…")
   const [error, setError] = useState<string | null>(null)
+  const currentToken = useRef(token)
+  currentToken.current = token
   const unavailable = useRef(onUnavailable)
   unavailable.current = onUnavailable
   const reconcile = useCallback(
@@ -16,7 +18,7 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
       const [next, responses] = await Promise.all([
         fetchInbox(token, signal), fetchHistory(token, signal),
       ])
-      if (signal?.aborted) return
+      if (signal?.aborted || currentToken.current !== token) return
       setSnapshot(next)
       setHistory(responses)
       selectQuestion((current) =>
@@ -62,7 +64,8 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
               while ((boundary = buffer.indexOf("\n\n")) !== -1) {
                 const event = buffer.slice(0, boundary)
                 buffer = buffer.slice(boundary + 2)
-                if (event.includes("event: changed")) await reconcile(signal)
+                if (event.includes("event: changed") || event.includes("event: unavailable"))
+                  await reconcile(signal)
               }
             }
           } finally {

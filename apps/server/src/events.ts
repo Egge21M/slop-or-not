@@ -4,6 +4,7 @@ export function createPhoneEvents(store: Store) {
   return {
     stream(inboxId: string, signal: AbortSignal) {
       let stop = () => {};
+      let cancelled = false;
       const body = new ReadableStream<Uint8Array>({
         start(controller) {
           const encoder = new TextEncoder();
@@ -11,9 +12,12 @@ export function createPhoneEvents(store: Store) {
           const send = (data: string) => {
             if (!stopped) controller.enqueue(encoder.encode(data));
           };
-          const unsubscribe = store.subscribe(inboxId, () =>
-            send("event: changed\ndata: {}\n\n"),
-          );
+          const unsubscribe = store.subscribe(inboxId, (event) => {
+            if (event.type === "deleted") {
+              send("event: unavailable\ndata: {}\n\n");
+              stop();
+            } else send("event: changed\ndata: {}\n\n");
+          });
           const heartbeat = setInterval(() => send(": heartbeat\n\n"), 15000);
           stop = () => {
             if (stopped) return;
@@ -22,7 +26,7 @@ export function createPhoneEvents(store: Store) {
             unsubscribe();
             signal.removeEventListener("abort", stop);
             connections.delete(stop);
-            controller.close();
+            if (!cancelled) controller.close();
           };
           connections.add(stop);
           signal.addEventListener("abort", stop, { once: true });
@@ -30,6 +34,7 @@ export function createPhoneEvents(store: Store) {
           if (signal.aborted) stop();
         },
         cancel() {
+          cancelled = true;
           stop();
         },
       });

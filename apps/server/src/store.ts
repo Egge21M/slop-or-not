@@ -20,7 +20,7 @@ export class DomainError extends Error {
     super(message);
   }
 }
-export type InboxEvent = { type: "changed"; inboxId: string };
+export type InboxEvent = { type: "changed" | "deleted"; inboxId: string };
 export function createStore(options: {
   databasePath: string;
   clock?: () => number;
@@ -87,9 +87,9 @@ export function createStore(options: {
     if (!row) return expired(inboxId, questionId);
     return view(row);
   };
-  const publish = (inboxId: string) => {
+  const publish = (inboxId: string, type: InboxEvent["type"] = "changed") => {
     for (const listener of listeners.get(inboxId) ?? [])
-      listener({ type: "changed", inboxId });
+      listener({ type, inboxId });
   };
   let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
   const retentionMs = 7 * 24 * 60 * 60 * 1000;
@@ -165,6 +165,18 @@ export function createStore(options: {
       return id;
     },
     hasInbox,
+    deleteInbox(inboxId: string) {
+      requireInbox(inboxId);
+      // Every content row and replay marker cascades from this Inbox. Publish
+      // only after the synchronous transaction has committed its deletion.
+      db.transaction((tx) => {
+        tx.delete(inboxes).where(eq(inboxes.id, inboxId)).run();
+      });
+      scheduleDeadline();
+      publish(inboxId, "deleted");
+      listeners.delete(inboxId);
+      return { deleted: true as const };
+    },
     get,
     history(inboxId: string): ResponseHistory {
       requireInbox(inboxId);
