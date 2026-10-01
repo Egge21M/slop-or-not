@@ -25,13 +25,19 @@ export function createApplication(options: {
   const auth = createAuth(options.jwtSecret, store);
   const mcp = createMcp(store);
   const events = createPhoneEvents(store);
+  const clock = options.clock ?? Date.now;
+  const json = (body: unknown, init: ResponseInit = {}) => {
+    const response = Response.json(body, init);
+    response.headers.set("x-slop-server-time", String(clock()));
+    return response;
+  };
   return {
     store,
     async fetch(request: Request): Promise<Response> {
       const url = new URL(request.url);
       const path = url.pathname;
       if (path === "/health" && request.method === "GET")
-        return Response.json({ ok: true });
+        return json({ ok: true });
       const expected = options.publicOrigin
         ? new URL(options.publicOrigin)
         : url;
@@ -40,7 +46,7 @@ export function createApplication(options: {
         (request.headers.has("origin") &&
           request.headers.get("origin") !== expected.origin)
       )
-        return Response.json({ error: "Origin rejected" }, { status: 403 });
+        return json({ error: "Origin rejected" }, { status: 403 });
       try {
         if (!path.startsWith("/api/") && path !== "/mcp")
           return serveWeb(
@@ -50,14 +56,14 @@ export function createApplication(options: {
           );
         if (path === "/api/inboxes" && request.method === "POST") {
           const inboxId = store.createInbox();
-          return Response.json(
+          return json(
             { inboxId, token: await auth.sign(inboxId) },
             { status: 201 },
           );
         }
         const inboxId = await auth.authenticate(request);
         if (!inboxId)
-          return Response.json({ error: "Unauthorized" }, { status: 401 });
+          return json({ error: "Unauthorized" }, { status: 401 });
         if (path === "/api/events" && request.method === "GET")
           return events.stream(inboxId, request.signal);
         if (path === "/mcp")
@@ -69,13 +75,13 @@ export function createApplication(options: {
             },
           });
         if (path === "/api/inbox" && request.method === "GET")
-          return Response.json(store.snapshot(inboxId));
+          return json(store.snapshot(inboxId));
         if (path === "/api/inbox" && request.method === "DELETE")
-          return Response.json(store.deleteInbox(inboxId));
+          return json(store.deleteInbox(inboxId));
         if (path === "/api/history" && request.method === "GET")
-          return Response.json(store.history(inboxId));
+          return json(store.history(inboxId));
         if (path === "/api/questions" && request.method === "POST")
-          return Response.json(
+          return json(
             store.submit(
               inboxId,
               submitQuestionSchema.parse(await request.json()),
@@ -88,11 +94,11 @@ export function createApplication(options: {
         if (match) {
           const id = questionIdSchema.parse(match[1]);
           if (request.method === "GET" && !match[2])
-            return Response.json(store.get(inboxId, id));
+            return json(store.get(inboxId, id));
           if (request.method === "POST" && match[2] === "/cancel")
-            return Response.json(store.cancel(inboxId, id));
+            return json(store.cancel(inboxId, id));
           if (request.method === "POST" && match[2] === "/custom-response")
-            return Response.json(
+            return json(
               store.respondCustom(
                 inboxId,
                 id,
@@ -100,29 +106,29 @@ export function createApplication(options: {
               ),
             );
           if (request.method === "POST" && match[2] === "/priority")
-            return Response.json(store.prioritize(inboxId, id));
+            return json(store.prioritize(inboxId, id));
 
           if (request.method === "POST" && match[2] === "/undo") {
             const input = undoBinarySchema.parse(await request.json());
-            return Response.json(store.undo(inboxId, id, input.choiceId));
+            return json(store.undo(inboxId, id, input.choiceId));
           }
           if (request.method === "POST" && match[2] === "/response") {
             const input = binaryResponseSchema.parse(await request.json());
-            return Response.json(
+            return json(
               store.respond(inboxId, id, input.value, input.choiceId),
             );
           }
         }
-        return Response.json({ error: "Not found" }, { status: 404 });
+        return json({ error: "Not found" }, { status: 404 });
       } catch (error) {
         if (error instanceof DomainError)
-          return Response.json(
+          return json(
             { error: error.message },
             { status: error.status },
           );
         if (error instanceof ZodError || error instanceof SyntaxError)
-          return Response.json({ error: "Invalid request" }, { status: 400 });
-        return Response.json(
+          return json({ error: "Invalid request" }, { status: 400 });
+        return json(
           { error: "Internal server error" },
           { status: 500 },
         );
