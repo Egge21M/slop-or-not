@@ -40,9 +40,14 @@ export const fetchInbox = (token: string, signal?: AbortSignal) =>
 export const sendBinary = (
   token: string,
   questionId: string,
-  value: "yes" | "no"
+  value: "yes" | "no",
+  choiceId: string
 ) =>
   api<QuestionView>(`/api/questions/${questionId}/response`, token, {
     method: "POST",
-    body: JSON.stringify(binaryResponseSchema.parse({ value })),
+    body: JSON.stringify(binaryResponseSchema.parse({ value, choiceId })),
+  })
+export const undoBinary = (token: string, questionId: string, choiceId: string) =>
+  api<QuestionView>(`/api/questions/${questionId}/undo`, token, {
+    method: "POST", body: JSON.stringify({ choiceId }),
   })
