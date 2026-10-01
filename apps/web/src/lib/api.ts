@@ -38,6 +38,8 @@ export const createInbox = () =>
   })
 export const fetchInbox = (token: string, signal?: AbortSignal) =>
   api<InboxSnapshot>("/api/inbox", token, { signal })
+export const deleteInbox = (token: string) =>
+  api<{ deleted: true }>("/api/inbox", token, { method: "DELETE" })
 export const sendBinary = (
   token: string,
   questionId: string,

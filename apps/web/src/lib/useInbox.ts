@@ -8,6 +8,8 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
   const [activeQuestionId, selectQuestion] = useState<string | null>(null)
   const [connection, setConnection] = useState("Connecting…")
   const [error, setError] = useState<string | null>(null)
+  const currentToken = useRef(token)
+  currentToken.current = token
   const unavailable = useRef(onUnavailable)
   unavailable.current = onUnavailable
   const reconcile = useCallback(
@@ -16,7 +18,7 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
       const [next, responses] = await Promise.all([
         fetchInbox(token, signal), fetchHistory(token, signal),
       ])
-      if (signal?.aborted) return
+      if (signal?.aborted || currentToken.current !== token) return
       setSnapshot(next)
       setHistory(responses)
       selectQuestion((current) =>
@@ -37,14 +39,19 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
     const signal = controller.signal
     let retry = 500
     async function connect() {
-      while (!signal.aborted) {
+      while (!signal.aborted && currentToken.current === token) {
         try {
           setConnection("Connecting…")
           await reconcile(signal)
+          if (signal.aborted || currentToken.current !== token) break
           const response = await fetch("/api/events", {
             headers: { authorization: `Bearer ${token}` },
             signal,
           })
+          if (signal.aborted || currentToken.current !== token) {
+            await response.body?.cancel().catch(() => {})
+            break
+          }
           if (!response.ok)
             throw new ApiError(response.status, "Live connection unavailable")
           if (!response.body) throw new Error("Live connection unavailable")
@@ -54,15 +61,17 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
           const decoder = new TextDecoder()
           let buffer = ""
           try {
-            while (!signal.aborted) {
+            while (!signal.aborted && currentToken.current === token) {
               const chunk = await reader.read()
+              if (signal.aborted || currentToken.current !== token) break
               if (chunk.done) break
               buffer += decoder.decode(chunk.value, { stream: true })
               let boundary: number
               while ((boundary = buffer.indexOf("\n\n")) !== -1) {
                 const event = buffer.slice(0, boundary)
                 buffer = buffer.slice(boundary + 2)
-                if (event.includes("event: changed")) await reconcile(signal)
+                if (event.includes("event: changed") || event.includes("event: unavailable"))
+                  await reconcile(signal)
               }
             }
           } finally {
@@ -70,14 +79,14 @@ export function useInbox(token: string | null, onUnavailable: () => void) {
             reader.releaseLock()
           }
         } catch (cause) {
-          if (signal.aborted) break
+          if (signal.aborted || currentToken.current !== token) break
           if (cause instanceof ApiError && cause.status === 401) {
             unavailable.current()
             break
           }
           setError("Connection lost. Your Inbox will refresh when connected.")
         }
-        if (signal.aborted) break
+        if (signal.aborted || currentToken.current !== token) break
         setConnection("Reconnecting…")
         await new Promise<void>((resolve) => {
           const finish = () => {

@@ -1,8 +1,9 @@
-import { useCallback, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { PairingPanel } from "./components/PairingPanel"
 import { QuestionCard } from "./components/QuestionCard"
 import { PendingQuestionList } from "./components/PendingQuestionList"
 import { ResponseHistory } from "./components/ResponseHistory"
+import { DeleteInbox } from "./components/DeleteInbox"
 import { credentialKey, useInbox } from "./lib/useInbox"
 function readCredential() {
   try {
@@ -13,8 +14,12 @@ function readCredential() {
 }
 export default function App() {
   const [token, setToken] = useState<string | null>(readCredential)
+  const currentToken = useRef(token)
   const [notice, setNotice] = useState<string | null>(null)
   const unavailable = useCallback(() => {
+    // A late result for a previous Inbox cannot clear its replacement.
+    if (currentToken.current !== token) return
+    currentToken.current = null
     try {
       localStorage.removeItem(credentialKey)
     } catch {}
@@ -22,7 +27,7 @@ export default function App() {
     setNotice(
       "This Inbox is unavailable. Join with a valid saved credential or create another Inbox."
     )
-  }, [])
+  }, [token])
   const inbox = useInbox(token, unavailable)
   function pair(credential: string) {
     try {
@@ -33,6 +38,7 @@ export default function App() {
         "Browser storage is unavailable. Save the credential before closing this page."
       )
     }
+    currentToken.current = credential
     setToken(credential)
   }
   return (
@@ -81,6 +87,16 @@ export default function App() {
             onSelect={inbox.selectQuestion}
           />
           <ResponseHistory history={inbox.history} />
+          <DeleteInbox
+            key={token}
+            token={token}
+            onUnavailable={unavailable}
+            onDeleted={() => {
+              if (currentToken.current !== token) return
+              unavailable()
+              setNotice("Your Inbox has been deleted. You can create another Inbox.")
+            }}
+          />
         </>
       )}
       <footer className="small-note">
