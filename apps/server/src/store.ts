@@ -177,6 +177,7 @@ export function createStore(options: {
     },
     prioritize(inboxId: string, questionId: string) {
       requireInbox(inboxId);
+      reconcileDeadlines();
       let changed = false;
       const result = db.transaction((tx) => {
         const row = tx

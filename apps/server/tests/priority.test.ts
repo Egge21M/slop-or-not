@@ -96,3 +96,21 @@ test("an authenticated agent can promote a Question through independent MCP requ
     expect((await tool("get_response", { questionId: oldest })).structuredContent).toEqual(promoted.structuredContent);
   } finally { await app.close(); }
 });
+
+test("a deadline commits before Priority promotion and removes the Question from pending selection", () => {
+  let now = 1000;
+  const store = createStore({ databasePath: ":memory:", clock: () => now });
+  try {
+    const inbox = store.createInbox();
+    store.submit(inbox, input(oldest, "agent-a"));
+    store.submit(inbox, input(middle, "agent-b"));
+    store.respond(inbox, oldest, "yes", crypto.randomUUID());
+    now = 4000;
+    expect(store.prioritize(inbox, oldest)).toMatchObject({
+      state: "answered", prio: false, response: { type: "binary", value: "yes" },
+    });
+    expect(store.snapshot(inbox).questions.map(q => q.questionId)).toEqual([middle]);
+    const terminal = store.get(inbox, oldest);
+    expect(store.prioritize(inbox, oldest)).toEqual(terminal);
+  } finally { store.close(); }
+});
