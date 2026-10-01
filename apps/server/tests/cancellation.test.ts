@@ -1,4 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
+import type { QuestionView } from "@slop-or-not/shared";
 import { createApplication } from "../src/app";
 
 const jwtSecret = "cancel-test-signing-secret-at-least-thirty-two-bytes";
@@ -138,7 +139,9 @@ test("two devices racing Custom Send and cancellation retain the first committed
       ? [[`${path}/cancel`, {}], [`${path}/custom-response`, { text: "Keep it, but rename it." }]]
       : [[`${path}/custom-response`, { text: "Keep it, but rename it." }], [`${path}/cancel`, {}]];
     const responses = await Promise.all(commands.map(([endpoint, body]) => request(app, endpoint as string, token, body)));
-    const [first, second] = await Promise.all(responses.map((response) => response.json()));
+    const [first, second] = await Promise.all(responses.map(async (response) =>
+      (await response.json()) as QuestionView));
+    if (!first || !second) throw new Error("Both devices must return an outcome");
     expect(["cancelled", "answered"]).toContain(first.state);
     expect(first.response).toEqual(first.state === "cancelled"
       ? null
