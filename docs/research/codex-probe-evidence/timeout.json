@@ -1,0 +1,191 @@
+{
+  "mode": "timeout",
+  "bun": "1.3.14",
+  "exitCode": 0,
+  "traces": [
+    {
+      "method": "initialize",
+      "timestamp": 1790841489380,
+      "protocolHeader": null,
+      "initialize": {
+        "protocolVersion": "2025-06-18",
+        "clientInfo": {
+          "name": "codex-mcp-client",
+          "title": "Codex",
+          "version": "0.159.2"
+        },
+        "capabilities": {
+          "elicitation": {
+            "form": {},
+            "url": {}
+          }
+        }
+      }
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 200,
+      "contentType": "text/event-stream"
+    },
+    {
+      "method": "notifications/initialized",
+      "timestamp": 1790841489450,
+      "protocolHeader": "2025-06-18"
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 202,
+      "contentType": null
+    },
+    {
+      "method": "tools/list",
+      "timestamp": 1790841489471,
+      "protocolHeader": "2025-06-18",
+      "meta": {
+        "progressToken": 0
+      }
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 200,
+      "contentType": "text/event-stream"
+    },
+    {
+      "method": "tools/call",
+      "tool": "submit_question",
+      "timestamp": 1790841506968,
+      "protocolHeader": "2025-06-18",
+      "meta": {
+        "progressToken": 1
+      }
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 200,
+      "contentType": "text/event-stream"
+    },
+    {
+      "method": "tools/call",
+      "tool": "wait_for_response",
+      "timestamp": 1790841506994,
+      "protocolHeader": "2025-06-18",
+      "meta": {
+        "progressToken": 2
+      }
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "phase": "wait-started",
+      "questionId": "probe-timeout",
+      "timestamp": 1790841507000
+    },
+    {
+      "status": 200,
+      "contentType": "text/event-stream"
+    },
+    {
+      "phase": "wait-aborted",
+      "questionId": "probe-timeout",
+      "timestamp": 1790841510074
+    },
+    {
+      "method": "initialize",
+      "timestamp": 1790841518682,
+      "protocolHeader": null,
+      "initialize": {
+        "protocolVersion": "2025-06-18",
+        "clientInfo": {
+          "name": "codex-mcp-client",
+          "title": "Codex",
+          "version": "0.159.2"
+        },
+        "capabilities": {
+          "elicitation": {
+            "form": {},
+            "url": {}
+          }
+        }
+      }
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 200,
+      "contentType": "text/event-stream"
+    },
+    {
+      "method": "notifications/initialized",
+      "timestamp": 1790841518698,
+      "protocolHeader": "2025-06-18"
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 202,
+      "contentType": null
+    },
+    {
+      "method": "tools/list",
+      "timestamp": 1790841518704,
+      "protocolHeader": "2025-06-18",
+      "meta": {
+        "progressToken": 0
+      }
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 200,
+      "contentType": "text/event-stream"
+    },
+    {
+      "method": "tools/call",
+      "tool": "get_response",
+      "timestamp": 1790841527195,
+      "protocolHeader": "2025-06-18",
+      "meta": {
+        "progressToken": 1
+      }
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 200,
+      "contentType": "text/event-stream"
+    }
+  ],
+  "browserAnswer": {
+    "browser": "154.0.8037.92",
+    "questionId": "probe-timeout",
+    "response": "yes",
+    "pageState": "Proceed after timeout?probe-timeout: answered (yes)"
+  },
+  "pendingAfterTimeout": [
+    {
+      "questionId": "probe-timeout",
+      "wording": "Proceed after timeout?",
+      "state": "pending"
+    }
+  ],
+  "stdout": "{\"type\":\"thread.started\",\"thread_id\":\"01a0f678-8651-7c53-8ab3-4d69c1212361\"}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"agent_message\",\"text\":\"I\u2019ll submit the question, wait with `waitMs: 20000`, and report the timeout without calling any further tools.\"}}\n{\"type\":\"item.started\",\"item\":{\"id\":\"item_1\",\"type\":\"mcp_tool_call\",\"server\":\"slop_probe\",\"tool\":\"submit_question\",\"arguments\":{\"questionId\":\"probe-timeout\",\"wording\":\"Proceed after timeout?\"},\"result\":null,\"error\":null,\"status\":\"in_progress\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_1\",\"type\":\"mcp_tool_call\",\"server\":\"slop_probe\",\"tool\":\"submit_question\",\"arguments\":{\"questionId\":\"probe-timeout\",\"wording\":\"Proceed after timeout?\"},\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"questionId\\\":\\\"probe-timeout\\\",\\\"wording\\\":\\\"Proceed after timeout?\\\",\\\"state\\\":\\\"pending\\\"}\"}],\"structured_content\":{\"questionId\":\"probe-timeout\",\"wording\":\"Proceed after timeout?\",\"state\":\"pending\"}},\"error\":null,\"status\":\"completed\"}}\n{\"type\":\"item.started\",\"item\":{\"id\":\"item_2\",\"type\":\"mcp_tool_call\",\"server\":\"slop_probe\",\"tool\":\"wait_for_response\",\"arguments\":{\"questionId\":\"probe-timeout\",\"waitMs\":20000},\"result\":null,\"error\":null,\"status\":\"in_progress\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_2\",\"type\":\"mcp_tool_call\",\"server\":\"slop_probe\",\"tool\":\"wait_for_response\",\"arguments\":{\"questionId\":\"probe-timeout\",\"waitMs\":20000},\"result\":null,\"error\":{\"message\":\"tool call error: tool call failed for `slop_probe/wait_for_response`\\n\\nCaused by:\\n    timed out awaiting tools/call after 1000ms\"},\"status\":\"failed\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_3\",\"type\":\"agent_message\",\"text\":\"Submitted `probe-timeout`: \u201cProceed after timeout?\u201d Called `wait_for_response` with `waitMs: 20000`; it timed out after 1 second. No further tools were called.\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":46363,\"cached_input_tokens\":42624,\"cache_write_input_tokens\":0,\"output_tokens\":182,\"reasoning_output_tokens\":0}}\n",
+  "stderr": "Reading additional input from stdin...\n",
+  "reconnect": {
+    "stdout": "{\"type\":\"thread.started\",\"thread_id\":\"01a0f678-f8e8-7e42-a453-5fcfaaee1d1e\"}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"agent_message\",\"text\":\"I\u2019ll call slop_probe get_response for `probe-timeout` and report its exact state and response.\"}}\n{\"type\":\"item.started\",\"item\":{\"id\":\"item_1\",\"type\":\"mcp_tool_call\",\"server\":\"slop_probe\",\"tool\":\"get_response\",\"arguments\":{\"questionId\":\"probe-timeout\"},\"result\":null,\"error\":null,\"status\":\"in_progress\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_1\",\"type\":\"mcp_tool_call\",\"server\":\"slop_probe\",\"tool\":\"get_response\",\"arguments\":{\"questionId\":\"probe-timeout\"},\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"questionId\\\":\\\"probe-timeout\\\",\\\"wording\\\":\\\"Proceed after timeout?\\\",\\\"state\\\":\\\"answered\\\",\\\"response\\\":\\\"yes\\\"}\"}],\"structured_content\":{\"questionId\":\"probe-timeout\",\"wording\":\"Proceed after timeout?\",\"state\":\"answered\",\"response\":\"yes\"}},\"error\":null,\"status\":\"completed\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_2\",\"type\":\"agent_message\",\"text\":\"State: `answered`\\nResponse: `yes`\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":30565,\"cached_input_tokens\":24576,\"cache_write_input_tokens\":0,\"output_tokens\":133,\"reasoning_output_tokens\":0}}\n",
+    "stderr": "Reading additional input from stdin...\n",
+    "exitCode": 0
+  }
+}

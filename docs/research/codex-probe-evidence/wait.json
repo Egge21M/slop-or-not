@@ -1,0 +1,115 @@
+{
+  "mode": "wait",
+  "versions": {
+    "bun": "1.3.14",
+    "sdkServer": "2.2.0",
+    "sdkClient": "2.2.0",
+    "codex": "codex-cli 0.159.2"
+  },
+  "exitCode": 0,
+  "checks": {
+    "browserAnswered": true,
+    "submitted": true,
+    "received": true
+  },
+  "traces": [
+    {
+      "method": "initialize",
+      "timestamp": 1790841597223,
+      "protocolHeader": null,
+      "initialize": {
+        "protocolVersion": "2025-06-18",
+        "clientInfo": {
+          "name": "codex-mcp-client",
+          "title": "Codex",
+          "version": "0.159.2"
+        },
+        "capabilities": {
+          "elicitation": {
+            "form": {},
+            "url": {}
+          }
+        }
+      }
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 200,
+      "contentType": "text/event-stream"
+    },
+    {
+      "method": "notifications/initialized",
+      "timestamp": 1790841597290,
+      "protocolHeader": "2025-06-18"
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 202,
+      "contentType": null
+    },
+    {
+      "method": "tools/list",
+      "timestamp": 1790841597303,
+      "protocolHeader": "2025-06-18",
+      "meta": {
+        "progressToken": 0
+      }
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 200,
+      "contentType": "text/event-stream"
+    },
+    {
+      "method": "tools/call",
+      "tool": "submit_question",
+      "timestamp": 1790841606784,
+      "protocolHeader": "2025-06-18",
+      "meta": {
+        "progressToken": 1
+      }
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "status": 200,
+      "contentType": "text/event-stream"
+    },
+    {
+      "method": "tools/call",
+      "tool": "wait_for_response",
+      "timestamp": 1790841606809,
+      "protocolHeader": "2025-06-18",
+      "meta": {
+        "progressToken": 2
+      }
+    },
+    {
+      "era": "legacy"
+    },
+    {
+      "phase": "wait-started",
+      "questionId": "probe-wait",
+      "timestamp": 1790841606818
+    },
+    {
+      "status": 200,
+      "contentType": "text/event-stream"
+    }
+  ],
+  "browserAnswer": {
+    "browser": "154.0.8037.92",
+    "questionId": "probe-wait",
+    "response": "yes",
+    "pageState": "Proceed with waiting?probe-wait: answered (yes)"
+  },
+  "stdout": "{\"type\":\"thread.started\",\"thread_id\":\"01a0f67a-2b98-7df3-94cc-57e40e11cc0c\"}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"agent_message\",\"text\":\"I\u2019ll submit the question, wait 10 seconds for the response, and report the exact returned state and response.\"}}\n{\"type\":\"item.started\",\"item\":{\"id\":\"item_1\",\"type\":\"mcp_tool_call\",\"server\":\"slop_probe\",\"tool\":\"submit_question\",\"arguments\":{\"questionId\":\"probe-wait\",\"wording\":\"Proceed with waiting?\"},\"result\":null,\"error\":null,\"status\":\"in_progress\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_1\",\"type\":\"mcp_tool_call\",\"server\":\"slop_probe\",\"tool\":\"submit_question\",\"arguments\":{\"questionId\":\"probe-wait\",\"wording\":\"Proceed with waiting?\"},\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"questionId\\\":\\\"probe-wait\\\",\\\"wording\\\":\\\"Proceed with waiting?\\\",\\\"state\\\":\\\"pending\\\"}\"}],\"structured_content\":{\"questionId\":\"probe-wait\",\"wording\":\"Proceed with waiting?\",\"state\":\"pending\"}},\"error\":null,\"status\":\"completed\"}}\n{\"type\":\"item.started\",\"item\":{\"id\":\"item_2\",\"type\":\"mcp_tool_call\",\"server\":\"slop_probe\",\"tool\":\"wait_for_response\",\"arguments\":{\"questionId\":\"probe-wait\",\"waitMs\":10000},\"result\":null,\"error\":null,\"status\":\"in_progress\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_2\",\"type\":\"mcp_tool_call\",\"server\":\"slop_probe\",\"tool\":\"wait_for_response\",\"arguments\":{\"questionId\":\"probe-wait\",\"waitMs\":10000},\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"questionId\\\":\\\"probe-wait\\\",\\\"wording\\\":\\\"Proceed with waiting?\\\",\\\"state\\\":\\\"answered\\\",\\\"response\\\":\\\"yes\\\"}\"}],\"structured_content\":{\"questionId\":\"probe-wait\",\"wording\":\"Proceed with waiting?\",\"state\":\"answered\",\"response\":\"yes\"}},\"error\":null,\"status\":\"completed\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_3\",\"type\":\"agent_message\",\"text\":\"State: `\\\"answered\\\"`\\nResponse: `\\\"yes\\\"`\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":30718,\"cached_input_tokens\":27264,\"cache_write_input_tokens\":0,\"output_tokens\":185,\"reasoning_output_tokens\":0}}\n",
+  "stderr": "Reading additional input from stdin...\n"
+}

@@ -1,0 +1,53 @@
+{
+  "mode": "strict",
+  "bun": "1.3.14",
+  "exitCode": 0,
+  "traces": [
+    {
+      "method": "initialize",
+      "protocolHeader": null,
+      "initialize": {
+        "protocolVersion": "2025-06-18",
+        "clientInfo": {
+          "name": "codex-mcp-client",
+          "title": "Codex",
+          "version": "0.159.2"
+        },
+        "capabilities": {
+          "elicitation": {
+            "form": {},
+            "url": {}
+          }
+        }
+      }
+    },
+    {
+      "status": 400,
+      "contentType": "application/json;charset=utf-8"
+    },
+    {
+      "method": "initialize",
+      "protocolHeader": null,
+      "initialize": {
+        "protocolVersion": "2025-06-18",
+        "clientInfo": {
+          "name": "codex-mcp-client",
+          "title": "Codex",
+          "version": "0.159.2"
+        },
+        "capabilities": {
+          "elicitation": {
+            "form": {},
+            "url": {}
+          }
+        }
+      }
+    },
+    {
+      "status": 400,
+      "contentType": "application/json;charset=utf-8"
+    }
+  ],
+  "stdout": "{\"type\":\"thread.started\",\"thread_id\":\"01a0f676-4da9-7372-a1f8-2920913711b2\"}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"agent_message\",\"text\":\"The MCP server connection could not be determined: `slop_probe submit_question` was unavailable. No connection error was exposed.\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":30528,\"cached_input_tokens\":27264,\"cache_write_input_tokens\":0,\"output_tokens\":129,\"reasoning_output_tokens\":0}}\n",
+  "stderr": "Reading additional input from stdin...\n"
+}
