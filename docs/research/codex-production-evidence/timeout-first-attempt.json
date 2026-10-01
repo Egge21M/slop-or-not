@@ -1,0 +1,74 @@
+{
+  "mode": "timeout",
+  "versions": {
+    "bun": "1.3.14",
+    "codex": "codex-cli 0.159.2",
+    "chrome": "154.0.8037.92",
+    "sdk": "2.2.0"
+  },
+  "checks": {
+    "paired": true,
+    "submitted": true,
+    "timeout": true,
+    "pendingAfterTimeout": true,
+    "restartAndRepeatedRetrieval": false
+  },
+  "trace": [
+    {
+      "method": "initialize",
+      "revision": null,
+      "offered": "2025-06-18"
+    },
+    {
+      "method": "notifications/initialized",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/list",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/call",
+      "tool": "submit_question",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/call",
+      "tool": "wait_for_response",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "initialize",
+      "revision": null,
+      "offered": "2025-06-18"
+    },
+    {
+      "method": "notifications/initialized",
+      "revision": "2025-06-18"
+    },
+    {
+      "method": "tools/list",
+      "revision": "2025-06-18"
+    }
+  ],
+  "pendingAfterTimeout": {
+    "questionId": "01a0f68a-3265-7000-96bd-526ebe069d7b",
+    "wording": "Should we proceed after timeout?",
+    "project": "production-smoke",
+    "agentSession": "timeout",
+    "createdAt": 1790842661122,
+    "prio": false,
+    "state": "pending",
+    "response": null
+  },
+  "first": {
+    "stdout": "{\"type\":\"thread.started\",\"thread_id\":\"01a0f68a-3392-7f52-894a-ba48d02db438\"}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"agent_message\",\"text\":\"I’ll submit the question, then wait for the response once and report the timeout without making further calls.\"}}\n{\"type\":\"item.started\",\"item\":{\"id\":\"item_1\",\"type\":\"mcp_tool_call\",\"server\":\"slop_not\",\"tool\":\"submit_question\",\"arguments\":{\"questionId\":\"01a0f68a-3265-7000-96bd-526ebe069d7b\",\"wording\":\"Should we proceed after timeout?\",\"project\":\"production-smoke\",\"agentSession\":\"timeout\"},\"result\":null,\"error\":null,\"status\":\"in_progress\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_1\",\"type\":\"mcp_tool_call\",\"server\":\"slop_not\",\"tool\":\"submit_question\",\"arguments\":{\"questionId\":\"01a0f68a-3265-7000-96bd-526ebe069d7b\",\"wording\":\"Should we proceed after timeout?\",\"project\":\"production-smoke\",\"agentSession\":\"timeout\"},\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"questionId\\\":\\\"01a0f68a-3265-7000-96bd-526ebe069d7b\\\",\\\"wording\\\":\\\"Should we proceed after timeout?\\\",\\\"project\\\":\\\"production-smoke\\\",\\\"agentSession\\\":\\\"timeout\\\",\\\"createdAt\\\":1790842661122,\\\"prio\\\":false,\\\"state\\\":\\\"pending\\\",\\\"response\\\":null}\"}],\"structured_content\":{\"questionId\":\"01a0f68a-3265-7000-96bd-526ebe069d7b\",\"wording\":\"Should we proceed after timeout?\",\"project\":\"production-smoke\",\"agentSession\":\"timeout\",\"createdAt\":1790842661122,\"prio\":false,\"state\":\"pending\",\"response\":null}},\"error\":null,\"status\":\"completed\"}}\n{\"type\":\"item.started\",\"item\":{\"id\":\"item_2\",\"type\":\"mcp_tool_call\",\"server\":\"slop_not\",\"tool\":\"wait_for_response\",\"arguments\":{\"questionId\":\"01a0f68a-3265-7000-96bd-526ebe069d7b\",\"waitMs\":20000},\"result\":null,\"error\":null,\"status\":\"in_progress\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_2\",\"type\":\"mcp_tool_call\",\"server\":\"slop_not\",\"tool\":\"wait_for_response\",\"arguments\":{\"questionId\":\"01a0f68a-3265-7000-96bd-526ebe069d7b\",\"waitMs\":20000},\"result\":null,\"error\":{\"message\":\"tool call error: tool call failed for `slop_not/wait_for_response`\\n\\nCaused by:\\n    timed out awaiting tools/call after 1000ms\"},\"status\":\"failed\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_3\",\"type\":\"agent_message\",\"text\":\"The question was submitted. `wait_for_response` requested 20,000 ms but hit the client timeout after 1,000 ms. No further calls were made.\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":62557,\"cached_input_tokens\":51968,\"cache_write_input_tokens\":0,\"output_tokens\":232,\"reasoning_output_tokens\":0}}\n",
+    "stderr": "Reading additional input from stdin...\n",
+    "exitCode": 0
+  },
+  "reconnect": {
+    "stdout": "{\"type\":\"thread.started\",\"thread_id\":\"01a0f68a-924b-7631-9aa1-7674b0bdfc76\"}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"agent_message\",\"text\":\"I’ll check whether `slop_not.get_response` is available and report both outcomes exactly.\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_1\",\"type\":\"agent_message\",\"text\":\"1. Not called: `slop_not.get_response` is not available in this session.\\n2. Not called: `slop_not.get_response` is not available in this session.\\n\\nNo other tools were used.\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":15964,\"cached_input_tokens\":12288,\"cache_write_input_tokens\":0,\"output_tokens\":129,\"reasoning_output_tokens\":55}}\n",
+    "stderr": "Reading additional input from stdin...\n",
+    "exitCode": 0
+  }
+}
