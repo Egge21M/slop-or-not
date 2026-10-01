@@ -1,5 +1,6 @@
 import {
   binaryResponseSchema,
+  customResponseSchema,
   type InboxSnapshot,
   type QuestionView,
 } from "@slop-or-not/shared"
@@ -50,4 +51,9 @@ export const sendBinary = (
 export const undoBinary = (token: string, questionId: string, choiceId: string) =>
   api<QuestionView>(`/api/questions/${questionId}/undo`, token, {
     method: "POST", body: JSON.stringify({ choiceId }),
+  })
+export const sendCustom = (token: string, questionId: string, text: string) =>
+  api<QuestionView>(`/api/questions/${questionId}/custom-response`, token, {
+    method: "POST",
+    body: JSON.stringify(customResponseSchema.parse({ text })),
   })

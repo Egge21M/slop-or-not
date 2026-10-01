@@ -68,6 +68,31 @@ test("independent authenticated MCP requests submit and retrieve the phone's Res
       state: "answered",
       response: { type: "binary", value: "yes" },
     });
+    const customQuestion = {
+      ...question,
+      questionId: "01993940-1000-7000-8000-000000000053",
+    };
+    await call("submit_question", customQuestion);
+    const text =
+      "  Yes, but keep the compatibility adapter.\nAsk before removing it.  ";
+    const sent = await app.fetch(
+      new Request(
+        `http://localhost/api/questions/${customQuestion.questionId}/custom-response`,
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ text }),
+        },
+      ),
+    );
+    expect(sent.status).toBe(200);
+    expect(
+      (await call("get_response", { questionId: customQuestion.questionId }))
+        .structuredContent,
+    ).toMatchObject({ state: "answered", response: { type: "custom", text } });
     expect(
       (await app.fetch(new Request("http://localhost/mcp", { method: "POST" })))
         .status,

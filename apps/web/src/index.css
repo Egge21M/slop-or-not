@@ -227,3 +227,52 @@ summary {
   font-size: 0.85rem;
   line-height: 1.5;
 }
+.supporting-markdown {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.supporting-markdown > * + * {
+  margin-top: 0.9rem;
+}
+.supporting-markdown ul,
+.supporting-markdown ol {
+  padding-left: 1.4rem;
+}
+.supporting-markdown ul {
+  list-style: disc;
+}
+.supporting-markdown ol {
+  list-style: decimal;
+}
+.supporting-markdown a {
+  color: #476e36;
+  text-decoration: underline;
+}
+.supporting-markdown pre {
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 0.65rem;
+  padding: 0.9rem;
+  background: #edf0e6;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  touch-action: pan-x pan-y;
+}
+.supporting-markdown code {
+  font-family: ui-monospace, monospace;
+}
+.supporting-markdown :not(pre) > code {
+  padding: 0.15rem 0.3rem;
+  background: #edf0e6;
+  border-radius: 0.25rem;
+}
+.supporting-markdown blockquote {
+  padding-left: 1rem;
+  border-left: 3px solid #cdd2c1;
+  color: #65705e;
+}
+.supporting-markdown img {
+  max-width: 100%;
+  height: auto;
+}
