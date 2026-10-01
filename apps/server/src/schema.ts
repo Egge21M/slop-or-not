@@ -22,7 +22,7 @@ export const questions = sqliteTable(
     supportingMarkdown: text("supporting_markdown"),
     createdAt: integer("created_at").notNull(),
     prio: integer("prio", { mode: "boolean" }).notNull().default(false),
-    state: text("state", { enum: ["pending", "answered"] })
+    state: text("state", { enum: ["pending", "answered", "cancelled"] })
       .notNull()
       .default("pending"),
     response: text("response", { mode: "json" }).$type<

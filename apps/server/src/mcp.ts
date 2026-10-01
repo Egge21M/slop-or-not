@@ -63,6 +63,16 @@ export function createMcp(store: Store) {
         async ({ questionId }) => output(() => store.prioritize(inboxId, questionId)),
       );
       server.registerTool(
+        "cancel_question",
+        {
+          description:
+            "Explicitly withdraw a pending Question. Cancellation can win during the binary Undo window. The first committed Response or cancellation wins; later attempts return that existing outcome. Disconnecting or timing out never cancels a Question. To change immutable content, cancel and submit a new Question ID.",
+          inputSchema: getResponseSchema,
+          annotations: { idempotentHint: true, destructiveHint: true },
+        },
+        async ({ questionId }) => output(() => store.cancel(inboxId, questionId)),
+      );
+      server.registerTool(
         "get_response",
         {
           description:

@@ -23,7 +23,12 @@ export function QuestionCard({
   const [now, setNow] = useState(Date.now)
   const unsent = useRef<{ value: "yes" | "no"; choiceId: string } | null>(null)
   useEffect(() => {
-    setAuthoritative(question)
+    // An older Inbox fetch must not reopen a card after a final action receipt.
+    setAuthoritative((current) =>
+      current.state !== "pending" && question.state === "pending"
+        ? current
+        : question
+    )
     // Foreground reconciliation can recover an acknowledgment lost in transport.
     if (question.provisional || question.state !== "pending") {
       unsent.current = null
@@ -232,6 +237,9 @@ export function QuestionCard({
               : "No"}{" "}
           committed. Further answers cannot change it.
         </p>
+      )}
+      {authoritative.state === "cancelled" && (
+        <p role="status">Question cancelled. No Response was delivered.</p>
       )}
       {authoritative.response?.type === "custom" && (
         <p

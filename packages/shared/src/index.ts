@@ -63,7 +63,7 @@ export type ProvisionalBinary = z.infer<typeof binaryResponseSchema> & {
 export type QuestionView = SubmitQuestion & {
   createdAt: number;
   prio: boolean;
-  state: "pending" | "answered";
+  state: "pending" | "answered" | "cancelled";
   response: QuestionResponse | null;
   provisional: ProvisionalBinary | null;
 };
