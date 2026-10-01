@@ -4,6 +4,7 @@ import {
   binaryResponseSchema,
   questionIdSchema,
   submitQuestionSchema,
+  undoBinarySchema,
 } from "@slop-or-not/shared";
 import { createStore, DomainError } from "./store";
 import { createPhoneEvents } from "./events";
@@ -75,21 +76,28 @@ export function createApplication(options: {
               submitQuestionSchema.parse(await request.json()),
             ),
           );
-        const match = path.match(/^\/api\/questions\/([^/]+)(\/response|\/priority)?$/);
+        const match = path.match(/^\/api\/questions\/([^/]+)(\/response|\/undo|\/priority)?$/);
         if (match) {
           const id = questionIdSchema.parse(match[1]);
           if (request.method === "GET" && !match[2])
             return Response.json(store.get(inboxId, id));
           if (request.method === "POST" && match[2] === "/priority")
             return Response.json(store.prioritize(inboxId, id));
-          if (request.method === "POST" && match[2] === "/response")
+          if (request.method === "POST" && match[2] === "/undo") {
+            const input = undoBinarySchema.parse(await request.json());
+            return Response.json(store.undo(inboxId, id, input.choiceId));
+          }
+          if (request.method === "POST" && match[2] === "/response") {
+            const input = binaryResponseSchema.parse(await request.json());
             return Response.json(
               store.respond(
                 inboxId,
                 id,
-                binaryResponseSchema.parse(await request.json()).value,
+                input.value,
+                input.choiceId,
               ),
             );
+          }
         }
         return Response.json({ error: "Not found" }, { status: 404 });
       } catch (error) {

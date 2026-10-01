@@ -7,8 +7,8 @@ afterEach(async () => {
   for (const app of applications.splice(0)) await app.close();
 });
 const secret = "test-signing-secret-at-least-thirty-two-bytes";
-function application(databasePath = ":memory:") {
-  const app = createApplication({ databasePath, jwtSecret: secret });
+function application(databasePath = ":memory:", clock = Date.now) {
+  const app = createApplication({ databasePath, jwtSecret: secret, clock });
   applications.push(app);
   return app;
 }
@@ -57,7 +57,8 @@ async function pair(app: ReturnType<typeof application>) {
   }>;
 }
 test("an agent submits a Question and retrieves the phone's first committed binary Response", async () => {
-  const app = application();
+  let now = 10_000;
+  const app = application(":memory:", () => now);
   const { token } = await pair(app);
   const submitted = await request(
     app,
@@ -73,15 +74,18 @@ test("an agent submits a Question and retrieves the phone's first committed bina
   ).json()) as InboxSnapshot;
   expect(snapshot.questions).toHaveLength(1);
   expect(snapshot.questions[0]).toMatchObject(question);
-  const answered = await (
+  const provisional = await (
     await request(
       app,
       `/api/questions/${question.questionId}/response`,
       "POST",
-      { value: "yes" },
+      { value: "yes", choiceId: crypto.randomUUID() },
       token,
     )
   ).json();
+  expect(provisional).toMatchObject({ state: "pending", response: null });
+  now = 13_000;
+  const answered = await (await request(app, `/api/questions/${question.questionId}`, "GET", undefined, token)).json();
   expect(answered).toMatchObject({
     state: "answered",
     response: { type: "binary", value: "yes" },
@@ -90,7 +94,7 @@ test("an agent submits a Question and retrieves the phone's first committed bina
     app,
     `/api/questions/${question.questionId}/response`,
     "POST",
-    { value: "no" },
+    { value: "no", choiceId: crypto.randomUUID() },
     token,
   );
   expect(
@@ -221,7 +225,7 @@ test("invalid UUIDv7 and forged credentials fail while Inbox access stays isolat
         app,
         `/api/questions/${question.questionId}/response`,
         "POST",
-        { value: "yes" },
+        { value: "yes", choiceId: crypto.randomUUID() },
         second.token,
       )
     ).status,
@@ -246,8 +250,9 @@ test("invalid UUIDv7 and forged credentials fail while Inbox access stays isolat
   ).toBe(200);
 });
 test("pending Questions and committed Responses survive restart with the same credential", async () => {
+  let now = 10_000;
   const databasePath = `/tmp/slop-foundation-${crypto.randomUUID()}.sqlite`;
-  const app = application(databasePath);
+  const app = application(databasePath, () => now);
   const { token } = await pair(app);
   await request(app, "/api/questions", "POST", question, token);
   const secondQuestion = {
@@ -255,18 +260,20 @@ test("pending Questions and committed Responses survive restart with the same cr
     questionId: "01993940-1000-7000-8000-000000000002",
   };
   await request(app, "/api/questions", "POST", secondQuestion, token);
-  const answered = await (
+  await (
     await request(
       app,
       `/api/questions/${question.questionId}/response`,
       "POST",
-      { value: "no" },
+      { value: "no", choiceId: crypto.randomUUID() },
       token,
     )
   ).json();
+  now = 13_000;
+  const answered = await (await request(app, `/api/questions/${question.questionId}`, "GET", undefined, token)).json();
   applications.splice(applications.indexOf(app), 1);
   await app.close();
-  const restarted = application(databasePath);
+  const restarted = application(databasePath, () => now);
   expect(
     await (
       await request(
