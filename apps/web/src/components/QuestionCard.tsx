@@ -19,7 +19,14 @@ export function QuestionCard({
   const [authoritative, setAuthoritative] = useState(question)
   const [now, setNow] = useState(Date.now)
   const unsent = useRef<{ value: "yes" | "no"; choiceId: string } | null>(null)
-  useEffect(() => { setAuthoritative(question) }, [question])
+  useEffect(() => {
+    setAuthoritative(question)
+    // Foreground reconciliation can recover an acknowledgment lost in transport.
+    if (question.provisional || question.state !== "pending") {
+      unsent.current = null
+      setError(null)
+    }
+  }, [question])
   useEffect(() => {
     if (!authoritative.provisional) return
     let refreshed = false
