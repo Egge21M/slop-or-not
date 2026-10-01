@@ -2,7 +2,7 @@ import {
   binaryResponseSchema,
   customResponseSchema,
   type InboxSnapshot,
-  type QuestionView,
+  type QuestionOutcome, type ResponseHistory,
 } from "@slop-or-not/shared"
 export class ApiError extends Error {
   readonly status: number
@@ -44,16 +44,19 @@ export const sendBinary = (
   value: "yes" | "no",
   choiceId: string
 ) =>
-  api<QuestionView>(`/api/questions/${questionId}/response`, token, {
+  api<QuestionOutcome>(`/api/questions/${questionId}/response`, token, {
     method: "POST",
     body: JSON.stringify(binaryResponseSchema.parse({ value, choiceId })),
   })
 export const undoBinary = (token: string, questionId: string, choiceId: string) =>
-  api<QuestionView>(`/api/questions/${questionId}/undo`, token, {
+  api<QuestionOutcome>(`/api/questions/${questionId}/undo`, token, {
     method: "POST", body: JSON.stringify({ choiceId }),
   })
 export const sendCustom = (token: string, questionId: string, text: string) =>
-  api<QuestionView>(`/api/questions/${questionId}/custom-response`, token, {
+  api<QuestionOutcome>(`/api/questions/${questionId}/custom-response`, token, {
     method: "POST",
     body: JSON.stringify(customResponseSchema.parse({ text })),
   })
+
+export const fetchHistory = (token: string, signal?: AbortSignal) =>
+  api<ResponseHistory>("/api/history", token, { signal })

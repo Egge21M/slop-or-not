@@ -100,7 +100,7 @@ test("the server commits after the phone closes and subscribers can retrieve com
   const delivered = new Promise<unknown>((resolve) => {
     application.store.subscribe(inboxId, () => {
       const current = application.store.get(inboxId, question.questionId);
-      if (current.response) resolve(current);
+      if (current.state === "answered" && current.response) resolve(current);
     });
   });
   await request(application, token, `/api/questions/${question.questionId}/response`, { value: "no", choiceId });

@@ -14,7 +14,7 @@ test("priority Questions retain original creation order ahead of normal Question
   let store = createStore({ databasePath, clock: () => now });
   try {
     const inbox = store.createInbox();
-    expect(store.submit(inbox, input(oldest, "agent-a")).prio).toBe(false);
+    expect(store.submit(inbox, input(oldest, "agent-a"))).toMatchObject({ state: "pending", prio: false });
     now = 2000;
     store.submit(inbox, input(middle, "agent-b"));
     now = 3000;

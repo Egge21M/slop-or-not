@@ -47,7 +47,7 @@ export function createMcp(store: Store) {
         "submit_question",
         {
           description:
-            "Submit an immutable yes/no Question using your chosen UUIDv7. Identical retries return its current state; changed content conflicts. Returns immediately so you can continue independent work.",
+            "Submit an immutable yes/no Question using your chosen UUIDv7. Identical retries return its current state; changed content conflicts. Finished content expires after seven days: identical retries then return only questionId and state expired, without creating a card. Returns immediately so you can continue independent work.",
           inputSchema: submitQuestionSchema,
         },
         async (input) => output(() => store.submit(inboxId, input)),
@@ -76,7 +76,7 @@ export function createMcp(store: Store) {
         "get_response",
         {
           description:
-            "Retrieve the authoritative Question outcome by its original ID, including after reconnect. A pending Question has no delivered Response.",
+            "Retrieve the authoritative Question outcome by its original ID, including after reconnect. A pending Question has no delivered Response. Seven days after finishing, only questionId and state expired remain; wording and Response are unavailable.",
           inputSchema: getResponseSchema,
           annotations: { readOnlyHint: true },
         },

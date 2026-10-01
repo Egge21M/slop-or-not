@@ -93,6 +93,15 @@ test("independent authenticated MCP requests submit and retrieve the phone's Res
       (await call("get_response", { questionId: customQuestion.questionId }))
         .structuredContent,
     ).toMatchObject({ state: "answered", response: { type: "custom", text } });
+    now += 7 * 24 * 60 * 60 * 1000;
+    const expired = { questionId: customQuestion.questionId, state: "expired" };
+    for (const name of ["get_response", "wait_for_response", "cancel_question", "prioritize_question"]) {
+      const result = await call(name, { questionId: customQuestion.questionId });
+      expect(result.structuredContent).toEqual(expired);
+      expect(result.content).toEqual([{ type: "text", text: JSON.stringify(expired) }]);
+    }
+    expect((await call("submit_question", customQuestion)).structuredContent).toEqual(expired);
+    expect((await call("submit_question", { ...customQuestion, wording: "Changed" })).isError).toBe(true);
     expect(
       (await app.fetch(new Request("http://localhost/mcp", { method: "POST" })))
         .status,

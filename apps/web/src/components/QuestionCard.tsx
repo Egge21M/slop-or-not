@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import type { QuestionView } from "@slop-or-not/shared"
+import type { QuestionView, QuestionOutcome } from "@slop-or-not/shared"
 import { Button } from "./ui/button"
 import { sendBinary, undoBinary, ApiError } from "../lib/api"
 import { useQuestionSwipe } from "../lib/useQuestionSwipe"
@@ -19,7 +19,8 @@ export function QuestionCard({
   const [busy, setBusy] = useState(false)
   const [composing, setComposing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [authoritative, setAuthoritative] = useState(question)
+  const [authoritative, setAuthoritative] = useState<QuestionOutcome>(question)
+  const retained = authoritative.state === "expired" ? null : authoritative
   const [now, setNow] = useState(Date.now)
   const unsent = useRef<{ value: "yes" | "no"; choiceId: string } | null>(null)
   useEffect(() => {
@@ -37,23 +38,23 @@ export function QuestionCard({
     if (question.state !== "pending") setComposing(false)
   }, [question])
   useEffect(() => {
-    if (!authoritative.provisional) return
+    if (!retained?.provisional) return
     let refreshed = false
     const timer = setInterval(() => {
       const current = Date.now()
       setNow(current)
-      if (current >= authoritative.provisional!.deadline && !refreshed) {
+      if (current >= retained.provisional!.deadline && !refreshed) {
         refreshed = true
         void onChanged().catch(() => {})
       }
     }, 100)
     return () => clearInterval(timer)
-  }, [authoritative.provisional, onChanged])
-  const remaining = authoritative.provisional
-    ? Math.max(0, authoritative.provisional.deadline - now)
+  }, [retained?.provisional, onChanged])
+  const remaining = retained?.provisional
+    ? Math.max(0, retained.provisional.deadline - now)
     : 0
   async function answer(value: "yes" | "no") {
-    if (busy || authoritative.provisional || authoritative.state !== "pending")
+    if (busy || retained?.provisional || authoritative.state !== "pending")
       return
     // Keep a failed request's ID so retry cannot resurrect an undone choice.
     const command = unsent.current ?? { value, choiceId: crypto.randomUUID() }
@@ -92,14 +93,14 @@ export function QuestionCard({
     }
   }
   async function undo() {
-    if (busy || !authoritative.provisional) return
+    if (busy || !retained?.provisional) return
     setBusy(true)
     setError(null)
     try {
       const result = await undoBinary(
         token,
         question.questionId,
-        authoritative.provisional.choiceId
+        retained?.provisional.choiceId
       )
       setAuthoritative(result)
       await onChanged().catch(() => {
@@ -126,12 +127,17 @@ export function QuestionCard({
     disabled:
       busy ||
       composing ||
-      !!authoritative.provisional ||
+      !!retained?.provisional ||
       authoritative.state !== "pending" ||
       !!unsent.current,
     onBinary: (value) => void answer(value),
     onCustom: () => setComposing(true),
   })
+  if (authoritative.state === "expired") {
+    return <article className="question-card panel" aria-label="Question card">
+      <p role="status">Question expired. Its content is no longer available.</p>
+    </article>
+  }
   return (
     <article
       className="question-card panel space-y-6"
@@ -162,7 +168,7 @@ export function QuestionCard({
           disabled={
             busy ||
             composing ||
-            !!authoritative.provisional ||
+            !!retained?.provisional ||
             authoritative.state !== "pending" ||
             !!unsent.current
           }
@@ -175,7 +181,7 @@ export function QuestionCard({
           disabled={
             busy ||
             composing ||
-            !!authoritative.provisional ||
+            !!retained?.provisional ||
             authoritative.state !== "pending" ||
             !!unsent.current
           }
@@ -205,15 +211,15 @@ export function QuestionCard({
       )}
       {busy && (
         <p role="status">
-          {authoritative.provisional
+          {retained?.provisional
             ? "Sending Undo… The stored deadline continues."
             : "Sending choice… Unsent until acknowledged."}
         </p>
       )}
-      {authoritative.provisional && (
+      {retained?.provisional && (
         <div className="space-y-3" aria-live="polite">
           <p role="status">
-            {authoritative.provisional.value === "yes" ? "Yes" : "No"}{" "}
+            {retained?.provisional.value === "yes" ? "Yes" : "No"}{" "}
             acknowledged.{" "}
             {remaining > 0
               ? `Provisional · Undo within ${(remaining / 1000).toFixed(1)} seconds.`
@@ -230,9 +236,9 @@ export function QuestionCard({
       )}
       {authoritative.state === "answered" && (
         <p role="status">
-          {authoritative.response?.type === "custom"
+          {retained?.response?.type === "custom"
             ? "Custom answer"
-            : authoritative.response?.value === "yes"
+            : retained?.response?.value === "yes"
               ? "Yes"
               : "No"}{" "}
           committed. Further answers cannot change it.
@@ -241,12 +247,12 @@ export function QuestionCard({
       {authoritative.state === "cancelled" && (
         <p role="status">Question cancelled. No Response was delivered.</p>
       )}
-      {authoritative.response?.type === "custom" && (
+      {retained?.response?.type === "custom" && (
         <p
           className="break-words whitespace-pre-wrap"
           aria-label="Committed Custom answer"
         >
-          {authoritative.response.text}
+          {retained?.response.text}
         </p>
       )}
       {unsent.current && !busy && (
