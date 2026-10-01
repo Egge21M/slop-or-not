@@ -3,7 +3,11 @@ import {
   McpServer,
   ProtocolError,
 } from "@modelcontextprotocol/server";
-import { getResponseSchema, submitQuestionSchema, waitForResponseSchema, type QuestionView } from "@slop-or-not/shared";
+import {
+  getResponseSchema,
+  submitQuestionSchema,
+  waitForResponseSchema,
+} from "@slop-or-not/shared";
 import { DomainError, type Store } from "./store";
 import { waitForResponse } from "./wait";
 
@@ -17,7 +21,7 @@ export function createMcp(store: Store) {
         { name: "slop-or-not", version: "0.1.0" },
         { capabilities: { tools: {} } },
       );
-      const output = async (run: () => QuestionView | Promise<QuestionView>) => {
+      const output = async (run: () => ReturnType<Store["get"]> | Promise<ReturnType<Store["get"]>>) => {
         try {
           const question = await run();
           const outcome = { ...question };

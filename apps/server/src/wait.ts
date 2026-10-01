@@ -1,5 +1,5 @@
-import type { QuestionView } from "@slop-or-not/shared";
 import { DomainError, type Store } from "./store";
+type QuestionOutcome = ReturnType<Store["get"]>;
 
 // Only delivery resources live here. Every observation reads durable application
 // state; no SQLite transaction remains open while awaiting the human.
@@ -9,7 +9,7 @@ export function waitForResponse(
   questionId: string,
   waitMs: number,
   signal: AbortSignal,
-): Promise<QuestionView> {
+): Promise<QuestionOutcome> {
   const initial = store.get(inboxId, questionId);
   if (signal.aborted) return Promise.reject(signal.reason);
   if (initial.state !== "pending" || waitMs === 0) return Promise.resolve(initial);
@@ -18,7 +18,7 @@ export function waitForResponse(
     let unsubscribe = () => {};
     let unsubscribeClose = () => {};
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const finish = (question?: QuestionView, error?: unknown) => {
+    const finish = (question?: QuestionOutcome, error?: unknown) => {
       if (settled) return;
       settled = true;
       if (timer !== undefined) clearTimeout(timer);
